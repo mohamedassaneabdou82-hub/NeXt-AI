@@ -403,7 +403,8 @@ button.me:hover{background:var(--soft)}
   async function db(path, opts) {
     var r = await real(SB + '/rest/v1/' + path, Object.assign({ headers: H }, opts || {}));
     if (!r.ok) throw new Error('db ' + r.status);
-    return r.status === 204 ? null : r.json();
+    var t = await r.text();
+    return t ? JSON.parse(t) : null;
   }
   function near(a, b) { var d = 0; for (var i = 0; i < 64; i++) if (a[i] !== b[i]) d++; return d <= 6; }
   async function upload(dataUrl) {
