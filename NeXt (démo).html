@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NeXt</title>
+<style>
+[hidden]{display:none!important}
+:root{
+  --bg:#FAF8F4; --surface:#FFFFFF; --soft:#F1EDE5; --line:#E4DED2;
+  --ink:#16130F; --ink-2:#5A5348; --ink-3:#958C7E;
+  --accent:#D2560C; --err:#B3261E;
+  --display:'Cabinet Grotesk',system-ui,sans-serif; --body:'General Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.55;display:flex;flex-direction:column}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px clamp(16px,3vw,28px)}
+.logo{border:0;background:none;padding:0;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.02em}
+.logo span{color:var(--accent)}
+nav{display:flex;gap:4px}
+.navlink{border:0;background:none;padding:8px 12px;border-radius:10px;color:var(--ink-2);font-weight:500;font-size:14px}
+.navlink:hover{background:var(--soft);color:var(--ink)}
+
+main{flex:1;display:flex;flex-direction:column;min-height:0}
+.view{display:none;flex:1;flex-direction:column;min-height:0}
+.view.active{display:flex}
+
+/* chat */
+#view-chat{width:100%;max-width:760px;margin:0 auto;padding:0 16px 14px}
+.hero{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:28px}
+.hero h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,36px);letter-spacing:-.02em;margin:0;text-align:center}
+#view-chat.started .hero{display:none}
+#view-chat:not(.started) .bar{margin-bottom:auto}
+#view-chat:not(.started) .foot{margin-bottom:28vh}
+.thread{display:none;flex:1;overflow-y:auto;padding:16px 0 24px;flex-direction:column;gap:22px}
+#view-chat.started .thread{display:flex}
+.m-user{align-self:flex-end;max-width:80%;background:var(--soft);padding:10px 16px;border-radius:20px;white-space:pre-wrap;overflow-wrap:anywhere}
+.m-bot{align-self:flex-start;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}
+.m-bot .src{display:block;margin-top:8px;font-size:12.5px;color:var(--ink-3)}
+.m-bot.none{color:var(--ink-2)}
+.typing{display:inline-flex;gap:4px;padding:6px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);animation:b 1s infinite ease-in-out}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+.bar{display:flex;align-items:flex-end;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:8px;box-shadow:0 4px 18px rgba(30,20,10,.06)}
+.bar textarea{flex:1;border:0;resize:none;background:transparent;padding:8px 6px;max-height:180px;outline:none;line-height:1.45}
+.pin,.send{flex-shrink:0;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:0}
+.pin{background:transparent;color:var(--ink-2)}
+.pin:hover{background:var(--soft);color:var(--ink)}
+.send{background:var(--ink);color:#fff}
+.send:disabled{background:var(--line);color:#fff;cursor:default}
+.foot{font-size:12px;color:var(--ink-3);text-align:center;margin:10px 0 0}
+
+/* founder page */
+#view-founder{align-items:center;justify-content:center;padding:24px 16px 80px}
+.founder{max-width:520px;text-align:center}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:0 0 20px}
+.avatar{width:96px;height:96px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin:0 auto 18px;font-family:var(--display);font-weight:800;font-size:34px}
+.founder h2{font-family:var(--display);font-size:clamp(30px,5vw,40px);margin:0;letter-spacing:-.02em}
+.role{color:var(--accent);font-weight:600;margin:4px 0 18px}
+.bio{color:var(--ink-2);white-space:pre-wrap;margin:0 0 14px}
+.contact{font-size:14px;color:var(--ink-3);margin:0}
+
+/* sheet */
+.overlay{position:fixed;inset:0;background:rgba(22,19,15,.38);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.overlay[hidden]{display:none}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:90dvh;overflow:auto;border-radius:20px;padding:20px 22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sheet-head h3{font-family:var(--display);font-size:20px;margin:0}
+.x{border:0;background:var(--soft);width:32px;height:32px;border-radius:50%;font-size:20px;line-height:1}
+.stack{display:flex;flex-direction:column;gap:10px}
+.stack label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:500;color:var(--ink-2)}
+.stack input,.stack textarea{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;font-size:14.5px}
+.stack textarea{resize:vertical}
+.muted{color:var(--ink-2);margin:0}
+.err{color:var(--err);font-size:13px;margin:0;min-height:1em}
+.row{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);padding:10px 16px;border-radius:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.ghost:hover{background:var(--soft)}
+.seg{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:12px;margin-bottom:14px}
+.segb{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:9px;font-weight:500;font-size:14px;color:var(--ink-2)}
+.segb.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px}
+.item-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.item b{font-weight:600}
+.item p{margin:4px 0 0;font-size:13.5px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.del{border:0;background:none;color:var(--ink-3);font-size:13px;padding:2px 6px;border-radius:6px;flex-shrink:0}
+.del:hover{background:var(--soft);color:var(--err)}
+.empty{color:var(--ink-3);text-align:center;padding:20px;border:1px dashed var(--line);border-radius:12px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s;font-size:14px;z-index:30}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:560px){
+  .navlink#nav-new{display:none}
+  #view-chat:not(.started) .foot{margin-bottom:18vh}
+}
+
+/* menu + sidebar */
+.top{gap:8px;justify-content:flex-start}
+.top-spacer{flex:1}
+.menu-btn{border:0;background:none;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2)}
+.menu-btn:hover{background:var(--soft);color:var(--ink)}
+.logo.static{cursor:default}
+.side-shade{position:fixed;inset:0;background:rgba(22,19,15,.3);z-index:15}
+.side{position:fixed;top:0;left:0;bottom:0;width:280px;max-width:86vw;background:var(--surface);border-right:1px solid var(--line);z-index:16;display:flex;flex-direction:column;padding:14px 12px;box-shadow:8px 0 30px rgba(0,0,0,.08);animation:slide .18s ease-out}
+@keyframes slide{from{transform:translateX(-24px);opacity:.4}to{transform:none;opacity:1}}
+.side-head{display:flex;justify-content:space-between;align-items:center;padding:2px 6px 14px}
+.side-nav{display:flex;flex-direction:column;gap:2px}
+.side-item{display:flex;align-items:center;gap:10px;border:0;background:none;padding:10px 10px;border-radius:10px;font-weight:500;text-align:left;color:var(--ink)}
+.side-item:hover,.side-item.active{background:var(--soft)}
+.side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:12px}
+.me{display:flex;align-items:center;gap:10px;padding:6px}
+.me .av{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;flex-shrink:0}
+.me .who{min-width:0;flex:1}
+.me .who b{display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me .who span{display:block;font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.linkbtn{border:0;background:none;color:var(--ink-3);font-size:13px;padding:6px;border-radius:8px}
+.linkbtn:hover{background:var(--soft);color:var(--ink)}
+.btn.block{width:100%}
+.sheet.small{max-width:420px}
+
+/* v3 : cartes partenaires + profil */
+.bar{padding-left:16px}
+.pcard{display:flex;gap:12px;margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);white-space:normal}
+.pcard .av{width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700;flex-shrink:0}
+.pinfo{min-width:0;display:flex;flex-direction:column;gap:2px}
+.pinfo b{font-weight:600}
+.pinfo>span{font-size:13.5px;color:var(--ink-2)}
+.skills{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.tag{font-size:12px;background:var(--soft);padding:2px 8px;border-radius:6px}
+.pact{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.pact a{font-size:13.5px;font-weight:600;text-decoration:none;padding:6px 12px;border-radius:999px}
+.call{background:var(--ink);color:#fff}
+.wa{background:#E3F4E8;color:#166534}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{flex-direction:row!important;align-items:flex-start;gap:8px!important;font-weight:400!important;line-height:1.4}
+.check input{margin-top:3px;width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)}
+button.me{width:100%;border:0;background:none;text-align:left;border-radius:10px}
+button.me:hover{background:var(--soft)}
+.edit-link{margin-top:28px;border:0;background:none;color:var(--ink-3);font-size:12.5px;text-decoration:underline;text-underline-offset:3px}
+.edit-link:hover{color:var(--ink)}
+@media (max-width:420px){.two{grid-template-columns:1fr}}
+.two input{width:100%;min-width:0}.two label{min-width:0}
+
+/* v4 : sexe, partenaire, épreuves */
+.stack select{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;font-size:14.5px;width:100%;min-width:0}
+.two select{width:100%}
+.pinfo .line{font-size:13px;color:var(--ink-2)}
+.pinfo .line i{font-style:normal;color:var(--ink-3)}
+.lbl{font-size:13px;font-weight:500;color:var(--ink-2)}
+
+#view-exams{overflow-y:auto}
+.exams{width:100%;max-width:760px;margin:0 auto;padding:8px 16px 48px}
+.exams-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.exams-head h2{font-family:var(--display);font-size:clamp(22px,4vw,28px);letter-spacing:-.02em;margin:0}
+.search-box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+.years{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:999px;font-size:13.5px;font-weight:500;color:var(--ink-2)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.exam-list{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.exam{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px}
+.exam-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.exam-top b{font-weight:600}
+.exam-meta{display:block;font-size:13px;color:var(--ink-3);margin:2px 0 10px}
+.exam-imgs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.exam-img{position:relative;border:0;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--soft)}
+.exam-img img{width:100%;height:100%;object-fit:cover;display:block}
+.exam-img .more{position:absolute;inset:0;display:grid;place-items:center;background:rgba(22,19,15,.55);color:#fff;font-weight:700}
+.photo-btn{cursor:pointer;border-style:dashed}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.th{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--soft)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th-x{position:absolute;top:3px;right:3px;width:22px;height:22px;border:0;border-radius:50%;background:rgba(22,19,15,.7);color:#fff;font-size:14px;line-height:1;padding:0}
+.photos-wrap{display:flex;flex-direction:column;gap:4px}
+.btn:disabled{opacity:.6;cursor:default}
+.viewer{position:fixed;inset:0;background:rgba(22,19,15,.94);z-index:40;overflow-y:auto;padding:56px 12px 24px}
+.viewer-close{position:fixed;top:12px;right:12px;z-index:41}
+.viewer-body{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.viewer-body img{width:100%;height:auto;border-radius:8px;background:#fff}
+@media (max-width:420px){.exam-imgs,.thumbs{grid-template-columns:repeat(3,1fr)}}
+
+.dup{background:#FFF1E6;color:#8A3B05;border-radius:12px;padding:12px;font-size:13.5px;line-height:1.45;display:flex;flex-direction:column;gap:8px}
+.dup[hidden]{display:none}
+
+.top{padding-top:calc(14px + env(safe-area-inset-top,0px))}
+.demo{margin:0 16px;padding:6px 12px;background:#FFF1E6;color:#8A3B05;border-radius:10px;font-size:12.5px;text-align:center}
+
+</style>
+<script>window.__API_BASE__ = '';</script>
+</head>
+<body>
+<header class="top">
+  <button class="menu-btn" id="menu-btn" aria-label="Ouvrir le menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+  </button>
+  <button class="logo" data-go="chat" data-new="1" aria-label="NeXt, accueil">Ne<span>X</span>t</button>
+  <span class="top-spacer"></span>
+</header>
+
+<!-- MENU LATÉRAL -->
+<div class="side-shade" id="side-shade" hidden></div>
+<aside class="side" id="side" aria-label="Menu" hidden>
+  <div class="side-head">
+    <span class="logo static">Ne<span>X</span>t</span>
+    <button class="x" id="side-close" aria-label="Fermer le menu">×</button>
+  </div>
+  <nav class="side-nav">
+    <button class="side-item" data-go="chat" data-new="1">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Nouvelle discussion
+    </button>
+    <button class="side-item" data-go="exams">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+      Épreuves
+    </button>
+    <button class="side-item" data-go="founder">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Page d'auteur
+    </button>
+  </nav>
+  <div class="side-foot" id="side-foot"></div>
+</aside>
+
+<main>
+  <!-- ACCUEIL / CHAT -->
+  <section id="view-chat" class="view active">
+    <div id="thread" class="thread"></div>
+    <div id="hero" class="hero">
+      <h1>Que veux-tu savoir ?</h1>
+    </div>
+    <form id="ask" class="bar">
+      <textarea id="q" rows="1" placeholder="Demande à NeXt" aria-label="Ta question"></textarea>
+      <button type="submit" class="send" id="send" aria-label="Envoyer" disabled>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+    </form>
+    <p class="foot">NeXt peut se tromper. Vérifie les informations importantes.</p>
+  </section>
+
+  <!-- ÉPREUVES -->
+  <section id="view-exams" class="view">
+    <div class="exams">
+      <div class="exams-head">
+        <h2>Épreuves des années passées</h2>
+        <button class="btn primary" id="exam-add">+ Ajouter</button>
+      </div>
+      <form id="exam-search" class="stack search-box">
+        <label>Matière<input id="s-subject" placeholder="Ex. : Management, Comptabilité" autocomplete="off"></label>
+        <label>Niveau
+          <select id="s-level">
+            <option value="">Tous les niveaux</option>
+            <option>Licence 1</option><option>Licence 2</option><option>Licence 3</option>
+            <option>Master 1</option><option>Master 2</option>
+          </select>
+        </label>
+        <label>Type
+          <select id="s-type">
+            <option value="">Tous les types</option>
+            <option>Examen</option><option>Devoir</option><option>Rattrapage</option>
+          </select>
+        </label>
+        <div class="years-wrap">
+          <span class="lbl">Année(s)</span>
+          <div class="years" id="s-years"></div>
+        </div>
+        <button class="btn primary" type="submit">Rechercher</button>
+      </form>
+      <p class="muted" id="exam-count"></p>
+      <div id="exam-list" class="exam-list"></div>
+    </div>
+  </section>
+
+  <!-- FONDATEUR -->
+  <section id="view-founder" class="view">
+    <article class="founder">
+      <p class="eyebrow">Auteur de NeXt</p>
+      <div class="avatar" id="f-avatar">?</div>
+      <h2 id="f-name">—</h2>
+      <p class="role" id="f-role">Fondateur et PDG</p>
+      <p class="bio" id="f-bio"></p>
+      <p class="contact" id="f-contact"></p>
+      <button class="edit-link" id="author-edit">Modifier</button>
+    </article>
+  </section>
+</main>
+
+<!-- MODIFIER LA PAGE D'AUTEUR -->
+<div class="overlay" id="overlay" hidden>
+  <div class="sheet small" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-head">
+      <h3 id="sheet-title">Modifier la page d'auteur</h3>
+      <button class="x" id="close" aria-label="Fermer">×</button>
+    </div>
+    <form id="auth" class="stack">
+      <p class="muted" id="auth-msg">Entre ton code secret.</p>
+      <input id="code" type="password" placeholder="Code secret" autocomplete="off" aria-label="Code secret">
+      <button class="btn primary" type="submit" id="auth-btn">Continuer</button>
+      <p class="err" id="auth-err"></p>
+    </form>
+    <form id="t-profile" class="stack" hidden>
+      <label>Nom<input id="p-name" placeholder="Ton nom complet"></label>
+      <label>Titre<input id="p-role" placeholder="Fondateur et PDG"></label>
+      <label>Présentation<textarea id="p-bio" rows="4" placeholder="Qui es-tu, pourquoi NeXt existe"></textarea></label>
+      <label>Contact<input id="p-contact" placeholder="Téléphone ou e-mail"></label>
+      <button class="btn primary" type="submit">Enregistrer</button>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="prof-overlay" hidden>
+  <div class="sheet small" role="dialog" aria-modal="true" aria-labelledby="prof-title">
+    <div class="sheet-head">
+      <h3 id="prof-title">Créer mon profil</h3>
+      <button class="x" id="prof-close" aria-label="Fermer">×</button>
+    </div>
+    <form id="prof-form" class="stack">
+      <p class="muted">Crée ton profil.</p>
+      <div class="two">
+        <label>Prénom<input id="u-first" autocomplete="given-name" required></label>
+        <label>Nom<input id="u-last" autocomplete="family-name" required></label>
+      </div>
+      <label>Numéro de téléphone<input id="u-phone" type="tel" placeholder="+227 90 00 00 00" autocomplete="tel" required></label>
+      <label>Sexe
+        <select id="u-gender" required>
+          <option value="">Choisir</option>
+          <option value="homme">Homme</option>
+          <option value="femme">Femme</option>
+        </select>
+      </label>
+      <label>Filière et niveau<input id="u-field" placeholder="Ex. : Informatique, L2" required></label>
+      <label>Compétences<input id="u-skills" placeholder="Ex. : programmation, design, marketing" required></label>
+      <label>Produit ou service proposé<input id="u-offer" placeholder="Ex. : application mobile, cours de maths, vente de snacks" required></label>
+      <label>Adresse Gmail (facultatif)<input id="u-email" type="email" placeholder="exemple@gmail.com" autocomplete="email"></label>
+      <label class="check"><input type="checkbox" id="u-consent"> <span>J'accepte que mon nom, mon sexe, ma filière, mes compétences, mon produit ou service et mon numéro soient visibles par les autres étudiants sur NeXt.</span></label>
+      <button class="btn primary" type="submit" id="prof-submit">Enregistrer mon profil</button>
+      <p class="err" id="prof-err"></p>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="exam-overlay" hidden>
+  <div class="sheet small" role="dialog" aria-modal="true" aria-labelledby="exam-title">
+    <div class="sheet-head">
+      <h3 id="exam-title">Ajouter une épreuve</h3>
+      <button class="x" id="exam-close" aria-label="Fermer">×</button>
+    </div>
+    <form id="exam-form" class="stack">
+      <label>Matière<input id="e-subject" list="subjects" placeholder="Ex. : Management" autocomplete="off" required></label>
+      <datalist id="subjects"></datalist>
+      <div class="two">
+        <label>Niveau
+          <select id="e-level" required>
+            <option value="">Choisir</option>
+            <option>Licence 1</option><option>Licence 2</option><option>Licence 3</option>
+            <option>Master 1</option><option>Master 2</option>
+          </select>
+        </label>
+        <label>Année<input id="e-year" type="number" inputmode="numeric" min="2000" max="2100" placeholder="2025" required></label>
+      </div>
+      <label>Type
+        <select id="e-type" required>
+          <option>Examen</option><option>Devoir</option><option>Rattrapage</option>
+        </select>
+      </label>
+      <label>Filière (facultatif)<input id="e-field" placeholder="Ex. : Gestion, Informatique"></label>
+      <div class="dup" id="exam-dup" hidden></div>
+      <div class="photos-wrap">
+        <span class="lbl">Photos de l'épreuve</span>
+        <label class="btn ghost photo-btn" for="e-files">+ Prendre ou choisir des photos</label>
+        <input id="e-files" type="file" accept="image/*" multiple hidden>
+        <div class="thumbs" id="e-thumbs"></div>
+      </div>
+      <button class="btn primary" type="submit" id="exam-submit">Publier l'épreuve</button>
+      <p class="err" id="exam-err"></p>
+    </form>
+  </div>
+</div>
+
+<div class="viewer" id="viewer" hidden>
+  <button class="x viewer-close" id="viewer-close" aria-label="Fermer">×</button>
+  <div class="viewer-body" id="viewer-body"></div>
+</div>
+
+<div id="toast" class="toast" role="status"></div>
+<script>
+(function () {
+  var mem = {};
+  function g(k, d) { if (k in mem) return mem[k]; try { var v = localStorage.getItem('nx_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function s(k, v) { mem[k] = v; try { localStorage.setItem('nx_' + k, JSON.stringify(v)); } catch (e) {} }
+  var norm = function (t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+  var STOP = ['les','des','une','que','qui','pour','avec','dans','cherche','je','un','le','la','de','du','et','en','au','sur','quelqu','trouver','veux','besoin','partenaire'];
+
+  var students = [
+    { name: 'Aïcha Moussa', gender: 'femme', field: 'Informatique, L2', skills: 'programmation, design, Python', offer: 'création de sites web', phone: '+227 90 00 00 01' },
+    { name: 'Ibrahim Souley', gender: 'homme', field: 'Gestion, L3', skills: 'marketing, vente, comptabilité', offer: 'vente de snacks et boissons', phone: '+227 90 00 00 02' },
+    { name: 'Fatima Abdou', gender: 'femme', field: 'Management, L2', skills: 'rédaction, communication, design graphique', offer: 'cours de soutien en management', phone: '+227 90 00 00 03' },
+    { name: 'Oumar Hamidou', gender: 'homme', field: 'Électronique, L3', skills: 'électronique, réparation, Arduino', offer: 'réparation de téléphones', phone: '+227 90 00 00 04' },
+    { name: 'Mariama Issa', gender: 'femme', field: 'Économie, L2', skills: 'analyse de données, Excel, statistiques', offer: 'tableaux de bord Excel', phone: '+227 90 00 00 05' }
+  ];
+
+  function page(subject, year, n) {
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#fff"/><rect x="20" y="20" width="560" height="760" fill="none" stroke="#999"/><text x="300" y="90" font-family="Arial" font-size="26" font-weight="bold" text-anchor="middle">EXAMEN DE ' + subject.toUpperCase() + '</text><text x="300" y="130" font-family="Arial" font-size="20" text-anchor="middle">Année ' + year + ' · Page ' + n + '</text><text x="300" y="400" font-family="Arial" font-size="18" fill="#888" text-anchor="middle">(exemple de démonstration)</text></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  var seedExams = [
+    { id: 's1', subject: 'Management', level: 'Licence 2', year: 2024, type: 'Examen', field: 'Gestion', images: [page('Management', 2024, 1), page('Management', 2024, 2)] },
+    { id: 's2', subject: 'Management', level: 'Licence 2', year: 2023, type: 'Examen', field: 'Gestion', images: [page('Management', 2023, 1)] },
+    { id: 's3', subject: 'Comptabilité', level: 'Licence 1', year: 2025, type: 'Examen', field: 'Gestion', images: [page('Comptabilité', 2025, 1), page('Comptabilité', 2025, 2)] }
+  ];
+
+  function near(a, b) { var d = 0; for (var i = 0; i < 64; i++) if (a[i] !== b[i]) d++; return d <= 6; }
+  function res(data, status) { return Promise.resolve(new Response(JSON.stringify(data), { status: status || 200, headers: { 'Content-Type': 'application/json' } })); }
+  function fail(msg, status) { return res({ detail: msg }, status || 400); }
+
+  async function askAI(all, q) {
+    try {
+      var sample = (window.claude && window.claude.use) ? await window.claude.use('sample') : null;
+      if (sample) {
+        var rows = all.map(function (p, i) { return i + ' | ' + p.name + ' | ' + (p.gender || '') + ' | ' + (p.field || '') + ' | compétences : ' + (p.skills || '') + ' | propose : ' + (p.offer || ''); }).join('\n');
+        var prompt = 'Tu es l’assistant de NeXt, une application qui aide les étudiants du Niger à trouver des partenaires de projet à l’université. ' +
+          'Réponds en français, de façon chaleureuse, naturelle et concise (3 à 5 phrases), comme une vraie IA conversationnelle. ' +
+          'Si des étudiants de la liste correspondent, présente-les brièvement. Si personne ne correspond, ou si la question est générale, réponds quand même utilement (conseil concret, idée, méthode) sans inventer d’étudiants.\n\n' +
+          'Étudiants inscrits (index | nom | sexe | filière | compétences | propose) :\n' + rows + '\n\nQuestion de l’étudiant : ' + q +
+          '\n\nRéponds uniquement avec un objet JSON : {"answer": "ton message", "matches": [index des étudiants pertinents, 3 maximum, tableau vide si aucun]}';
+        var out = await sample.json(prompt, { cache: false, modelTier: 'quick' });
+        if (out && typeof out.answer === 'string') {
+          var ms = (out.matches || []).filter(function (i) { return all[i]; }).slice(0, 3).map(function (i) { return all[i]; });
+          return res({ found: true, answer: out.answer, matches: ms });
+        }
+      }
+    } catch (e) {}
+    var toks = norm(q).split(/[^a-z0-9]+/).filter(function (w) { return w.length > 2 && STOP.indexOf(w) < 0; });
+    var scored = all.map(function (p) {
+      var hay = norm([p.field, p.skills, p.offer, p.name, p.gender].join(' '));
+      return { p: p, n: toks.filter(function (w) { return hay.indexOf(w) >= 0; }).length };
+    }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+    if (!scored.length) return res({ found: false, answer: 'Je n’ai trouvé personne pour l’instant. Essaie avec d’autres mots, par exemple une compétence (design, marketing…) ou une filière.', matches: [] });
+    return res({ found: true, answer: 'Voici les étudiants qui correspondent le mieux à ta recherche :', matches: scored.map(function (x) { return x.p; }) });
+  }
+
+  function handle(url, opts) {
+    var u = new URL(url, 'http://x'), path = u.pathname, m = (opts.method || 'GET').toUpperCase();
+    var body = {}; try { body = opts.body ? JSON.parse(opts.body) : {}; } catch (e) {}
+
+    if (path === '/api/me') {
+      if (m === 'GET') return res(g('me', {}));
+      if (m === 'DELETE') { s('me', {}); return res({ ok: true }); }
+      if (!body.consent) return fail('Coche la case pour accepter que ton profil soit visible.');
+      var me = { first_name: body.first_name, last_name: body.last_name, phone: body.phone, field: body.field, skills: body.skills, email: body.email, gender: body.gender, offer: body.offer };
+      s('me', me); return res(me);
+    }
+    if (path === '/api/ask') {
+      var me2 = g('me', {}), all = students.slice();
+      if (me2.first_name) all.push({ name: (me2.first_name + ' ' + me2.last_name).trim(), gender: me2.gender, field: me2.field, skills: me2.skills, offer: me2.offer, phone: me2.phone });
+      return askAI(all, body.q);
+    }
+    if (path === '/api/exams') {
+      var list = g('exams', null); if (!list) { list = seedExams.slice(); s('exams', list); }
+      if (m === 'POST') {
+        if (!body.subject || !body.level || !body.year || !(body.images || []).length) return fail('Complète tous les champs et ajoute au moins une photo.');
+        var ty = body.type || 'Examen', key = norm(body.subject) + '|' + body.level + '|' + body.year + '|' + ty;
+        var target = list.filter(function (x) { return norm(x.subject) + '|' + x.level + '|' + x.year + '|' + (x.type || 'Examen') === key; })[0];
+        if (!target) {
+          list.push({ id: 'u' + Date.now(), subject: body.subject, level: body.level, year: body.year, type: ty, field: body.field, images: body.images, hashes: body.hashes || [] });
+          s('exams', list); return res({ ok: true, merged: false, added: body.images.length, skipped: 0 });
+        }
+        target.hashes = target.hashes || []; var added = 0, skipped = 0;
+        body.images.forEach(function (src, k) {
+          var hh = (body.hashes || [])[k] || '';
+          if (hh && target.hashes.some(function (o) { return o && near(o, hh); })) { skipped++; return; }
+          target.images.push(src); target.hashes.push(hh); added++;
+        });
+        s('exams', list); return res({ ok: true, merged: true, added: added, skipped: skipped });
+      }
+      var sub = norm(u.searchParams.get('subject')), lvl = u.searchParams.get('level'), typ = u.searchParams.get('type'), yrs = (u.searchParams.get('years') || '').split(',').filter(Boolean);
+      var out = list.filter(function (x) {
+        return (!sub || norm(x.subject).indexOf(sub) >= 0) && (!lvl || x.level === lvl) && (!typ || (x.type || 'Examen') === typ) && (!yrs.length || yrs.indexOf(String(x.year)) >= 0);
+      }).sort(function (a, b) { return b.year - a.year; });
+      return res({ exams: out });
+    }
+    if (path === '/api/founder') {
+      if (m === 'PUT') { s('founder', body); return res(body); }
+      return res(g('founder', {}));
+    }
+    if (path === '/api/status') return res({ has_code: !!g('code', '') });
+    if (path === '/api/setup') { if (!body.code || body.code.length < 4) return fail('Au moins 4 caractères.'); s('code', body.code); return res({ ok: true }); }
+    if (path === '/api/login') { return g('code', '') === body.code ? res({ ok: true }) : fail('Code incorrect.', 401); }
+    return fail('Introuvable', 404);
+  }
+
+  var real = window.fetch.bind(window);
+  window.fetch = function (url, opts) { return (typeof url === 'string' && url.indexOf('/api/') === 0) ? handle(url, opts || {}) : real(url, opts); };
+
+  document.querySelector('header.top').insertAdjacentHTML('afterend', '<div class="demo">Version de démonstration : les données restent sur ton téléphone.</div>');
+})();
+
+</script>
+<script>
+(function () {
+  const local = new Set(['localhost', '127.0.0.1', '[::1]']);
+  const raw = window.__API_BASE__;
+  const API = raw.startsWith('__PORT_') ? (local.has(location.hostname) || location.protocol === 'file:' ? 'http://localhost:8000' : '') : raw;
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const clientId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  let code = null;
+
+  async function api(path, opts = {}) {
+    const headers = { 'Content-Type': 'application/json', 'X-Client-Id': clientId, ...(code ? { 'X-Founder-Code': code } : {}) };
+    const r = await fetch(API + path, { credentials: 'same-origin', ...opts, headers });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.detail || 'Erreur du serveur');
+    return data;
+  }
+  let tt; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2600); }
+  const initials = n => (n || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+  /* ---------- navigation ---------- */
+  function go(v) {
+    document.querySelectorAll('.view').forEach(x => x.classList.toggle('active', x.id === 'view-' + v));
+    if (v === 'founder') loadAuthor();
+    if (v === 'exams') initExams();
+  }
+  document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.new) resetChat(); go(b.dataset.go); closeSide(); }));
+
+  /* ---------- menu latéral ---------- */
+  const side = $('#side'), shade = $('#side-shade'), menuBtn = $('#menu-btn');
+  function openSide() { side.hidden = false; shade.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); renderMe(); }
+  function closeSide() { side.hidden = true; shade.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); }
+  menuBtn.addEventListener('click', () => side.hidden ? openSide() : closeSide());
+  $('#side-close').addEventListener('click', closeSide);
+  shade.addEventListener('click', closeSide);
+
+  /* ---------- profil étudiant ---------- */
+  let me = {};
+  const fullName = p => `${p.first_name || ''} ${p.last_name || ''}`.trim();
+  async function loadMe() { try { me = await api('/api/me'); } catch (e) { me = {}; } renderMe(); }
+  function renderMe() {
+    const f = $('#side-foot');
+    if (me.first_name) {
+      f.innerHTML = `<button class="me" id="me-edit" title="Modifier mon profil"><div class="av">${esc(initials(fullName(me)))}</div><div class="who"><b>${esc(fullName(me))}</b><span>${esc(me.field || me.email || 'Complète ton profil')}</span></div></button><button class="linkbtn" id="logout">Se déconnecter</button>`;
+      $('#me-edit').onclick = openProfile;
+      $('#logout').onclick = async () => { try { await api('/api/me', { method: 'DELETE' }); } catch (e) {} me = {}; renderMe(); toast('Profil retiré de NeXt'); };
+    } else {
+      f.innerHTML = `<button class="btn primary block" id="signup">Créer mon profil</button>`;
+      $('#signup').onclick = openProfile;
+    }
+  }
+  const profOv = $('#prof-overlay');
+  function openProfile() {
+    closeSide(); $('#prof-err').textContent = '';
+    const edit = !!me.first_name;
+    $('#prof-title').textContent = edit ? 'Modifier mon profil' : 'Créer mon profil';
+    $('#u-first').value = me.first_name || ''; $('#u-last').value = me.last_name || '';
+    $('#u-phone').value = me.phone || ''; $('#u-field').value = me.field || '';
+    $('#u-skills').value = me.skills || ''; $('#u-email').value = me.email || '';
+    $('#u-gender').value = me.gender || ''; $('#u-offer').value = me.offer || '';
+    $('#u-consent').checked = edit && !!me.phone;
+    profOv.hidden = false; setTimeout(() => $('#u-first').focus(), 50);
+  }
+  $('#prof-close').addEventListener('click', () => profOv.hidden = true);
+  profOv.addEventListener('click', e => { if (e.target === profOv) profOv.hidden = true; });
+  $('#prof-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      me = await api('/api/me', { method: 'POST', body: JSON.stringify({
+        first_name: $('#u-first').value, last_name: $('#u-last').value, phone: $('#u-phone').value,
+        field: $('#u-field').value, skills: $('#u-skills').value, email: $('#u-email').value,
+        gender: $('#u-gender').value, offer: $('#u-offer').value, consent: $('#u-consent').checked }) });
+      profOv.hidden = true; renderMe(); toast('Profil enregistré. Les autres étudiants peuvent maintenant te trouver.');
+    } catch (err) { $('#prof-err').textContent = err.message; }
+  });
+
+  /* ---------- chat ---------- */
+  const view = $('#view-chat'), thread = $('#thread'), q = $('#q'), send = $('#send');
+  function resetChat() { thread.innerHTML = ''; view.classList.remove('started'); q.value = ''; grow(); }
+  function grow() { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 180) + 'px'; send.disabled = !q.value.trim(); }
+  q.addEventListener('input', grow);
+  q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ask').requestSubmit(); } });
+  const telHref = p => 'tel:' + String(p).replace(/[^\d+]/g, '');
+  const waHref = p => { let d = String(p).replace(/\D/g, ''); if (d.length === 8) d = '227' + d; return 'https://wa.me/' + d; };
+  $('#ask').addEventListener('submit', async e => {
+    e.preventDefault();
+    const text = q.value.trim(); if (!text) return;
+    view.classList.add('started');
+    thread.insertAdjacentHTML('beforeend', `<div class="m-user">${esc(text)}</div>`);
+    const bot = document.createElement('div'); bot.className = 'm-bot'; bot.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+    thread.appendChild(bot); q.value = ''; grow(); thread.scrollTop = thread.scrollHeight;
+    try {
+      const r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ q: text }) });
+      await new Promise(r => setTimeout(r, 300));
+      if (!r.found) bot.classList.add('none');
+      bot.innerHTML = esc(r.answer) + (r.matches || []).map(m => `
+        <div class="pcard">
+          <div class="av">${esc(initials(m.name))}</div>
+          <div class="pinfo">
+            <b>${esc(m.name)}</b>
+            <span>${esc([m.gender ? (m.gender === 'femme' ? 'Femme' : 'Homme') : '', m.field].filter(Boolean).join(' · '))}</span>
+            ${m.offer ? `<span class="line"><i>Propose :</i> ${esc(m.offer)}</span>` : ''}
+            <div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>
+            <div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>
+          </div>
+        </div>`).join('');
+    } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
+    thread.scrollTop = thread.scrollHeight;
+  });
+
+  /* ---------- page d'auteur ---------- */
+  async function loadAuthor() {
+    try {
+      const f = await api('/api/founder');
+      $('#f-name').textContent = f.name || 'Auteur de NeXt';
+      $('#f-role').textContent = f.role || 'Fondateur et PDG';
+      $('#f-bio').textContent = f.bio || '';
+      $('#f-contact').textContent = f.contact || '';
+      $('#f-avatar').textContent = initials(f.name || 'N');
+      return f;
+    } catch (e) { return {}; }
+  }
+  const overlay = $('#overlay');
+  let hasCode = true;
+  $('#author-edit').addEventListener('click', async () => {
+    overlay.hidden = false; $('#auth-err').textContent = '';
+    if (code) return showAuthorForm();
+    try { hasCode = (await api('/api/status')).has_code; } catch (e) {}
+    $('#auth-msg').textContent = hasCode ? 'Entre ton code secret.' : 'Crée ton code secret (au moins 4 caractères).';
+    $('#auth-btn').textContent = hasCode ? 'Continuer' : 'Créer mon code';
+    $('#auth').hidden = false; $('#t-profile').hidden = true;
+    setTimeout(() => $('#code').focus(), 50);
+  });
+  $('#close').addEventListener('click', () => overlay.hidden = true);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.hidden = true; });
+  $('#auth').addEventListener('submit', async e => {
+    e.preventDefault();
+    const c = $('#code').value.trim(); if (!c) return;
+    try {
+      await api(hasCode ? '/api/login' : '/api/setup', { method: 'POST', body: JSON.stringify({ code: c }) });
+      code = c; $('#code').value = ''; hasCode = true; showAuthorForm();
+    } catch (err) { $('#auth-err').textContent = err.message; }
+  });
+  async function showAuthorForm() {
+    $('#auth').hidden = true; $('#t-profile').hidden = false;
+    const f = await loadAuthor();
+    $('#p-name').value = f.name || ''; $('#p-role').value = f.role || ''; $('#p-bio').value = f.bio || ''; $('#p-contact').value = f.contact || '';
+  }
+  $('#t-profile').addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      await api('/api/founder', { method: 'PUT', body: JSON.stringify({ name: $('#p-name').value, role: $('#p-role').value, bio: $('#p-bio').value, contact: $('#p-contact').value }) });
+      overlay.hidden = true; loadAuthor(); toast("Page d'auteur mise à jour");
+    } catch (err) { toast(err.message); }
+  });
+
+  /* ---------- épreuves ---------- */
+  const MAX_PHOTOS = 10;
+  const nrm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  let examsReady = false, pending = [];
+  const selYears = new Set();
+
+  function initExams() {
+    if (!examsReady) {
+      examsReady = true;
+      const y = new Date().getFullYear();
+      $('#s-years').innerHTML = Array.from({ length: 8 }, (_, i) => y - i)
+        .map(v => `<button type="button" class="chip" data-y="${v}" aria-pressed="false">${v}</button>`).join('');
+      $('#s-years').addEventListener('click', e => {
+        const b = e.target.closest('.chip'); if (!b) return;
+        const v = b.dataset.y, on = !selYears.has(v);
+        on ? selYears.add(v) : selYears.delete(v);
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+      });
+    }
+    searchExams(); refreshSubjects();
+  }
+  async function refreshSubjects() {
+    try {
+      const r = await api('/api/exams'); const seen = new Map();
+      (r.exams || []).forEach(x => { const k = nrm(x.subject); if (!seen.has(k)) seen.set(k, x.subject); });
+      $('#subjects').innerHTML = [...seen.values()].map(v => `<option value="${esc(v)}">`).join('');
+    } catch (e) {}
+  }
+  async function searchExams() {
+    const list = $('#exam-list'), count = $('#exam-count');
+    list.innerHTML = '<div class="empty">Recherche en cours…</div>'; count.textContent = '';
+    const qs = new URLSearchParams({ subject: $('#s-subject').value.trim(), level: $('#s-level').value, type: $('#s-type').value, years: [...selYears].join(',') });
+    try {
+      const r = await api('/api/exams?' + qs);
+      const items = r.exams || [];
+      count.textContent = items.length ? `${items.length} épreuve${items.length > 1 ? 's' : ''} trouvée${items.length > 1 ? 's' : ''}` : '';
+      list.innerHTML = items.length ? items.map(examCard).join('') : '<div class="empty">Aucune épreuve trouvée. Sois le premier à l\'ajouter !</div>';
+      list._items = items;
+    } catch (err) { list.innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+  }
+  const examCard = (x, i) => {
+    const imgs = x.images || [];
+    return `<article class="exam">
+      <div class="exam-top"><b>${esc(x.subject)}</b><span class="tag">${esc((x.type || 'Examen') + ' ' + x.year)}</span></div>
+      <span class="exam-meta">${esc([x.level, x.field, imgs.length + (imgs.length > 1 ? ' pages' : ' page')].filter(Boolean).join(' · '))}</span>
+      <div class="exam-imgs">${imgs.slice(0, 4).map((src, k) => `<button type="button" class="exam-img" data-i="${i}" data-k="${k}" aria-label="Voir l'épreuve"><img src="${esc(src)}" alt="Épreuve ${esc(x.subject)} ${esc(x.year)}" loading="lazy">${k === 3 && imgs.length > 4 ? `<span class="more">+${imgs.length - 4}</span>` : ''}</button>`).join('')}</div>
+    </article>`;
+  };
+  $('#exam-search').addEventListener('submit', e => { e.preventDefault(); searchExams(); });
+
+  /* visionneuse plein écran */
+  const viewer = $('#viewer');
+  $('#exam-list').addEventListener('click', e => {
+    const b = e.target.closest('.exam-img'); if (!b) return;
+    const x = $('#exam-list')._items[+b.dataset.i]; if (x) openViewer(x);
+  });
+  function openViewer(x) {
+    $('#viewer-body').innerHTML = (x.images || []).map(src => `<img src="${esc(src)}" alt="Épreuve ${esc(x.subject)} ${esc(x.year)}">`).join('');
+    viewer.hidden = false; viewer.scrollTop = 0;
+  }
+  $('#viewer-close').addEventListener('click', () => viewer.hidden = true);
+
+  /* ajout d'une épreuve */
+  const examOv = $('#exam-overlay');
+  $('#exam-add').addEventListener('click', () => {
+    pending = []; dupExam = null; $('#exam-form').reset(); $('#exam-err').textContent = ''; renderThumbs();
+    $('#e-year').value = new Date().getFullYear(); checkDup();
+    examOv.hidden = false;
+  });
+  $('#exam-close').addEventListener('click', () => examOv.hidden = true);
+  examOv.addEventListener('click', e => { if (e.target === examOv) examOv.hidden = true; });
+
+  function compress(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const max = 1600, k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const t = document.createElement('canvas'); t.width = t.height = 8;
+        const tc = t.getContext('2d'); tc.drawImage(img, 0, 0, 8, 8);
+        const px = tc.getImageData(0, 0, 8, 8).data, gr = [];
+        for (let i = 0; i < 256; i += 4) gr.push(px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11);
+        const avg = gr.reduce((p, v) => p + v, 0) / 64;
+        URL.revokeObjectURL(url); resolve({ src: c.toDataURL('image/jpeg', 0.75), hash: gr.map(v => v > avg ? '1' : '0').join('') });
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Photo illisible')); };
+      img.src = url;
+    });
+  }
+  function renderThumbs() {
+    $('#e-thumbs').innerHTML = pending.map((p, i) => `<div class="th"><img src="${p.src}" alt="Photo ${i + 1}"><button type="button" class="th-x" data-i="${i}" aria-label="Retirer la photo">×</button></div>`).join('');
+  }
+  $('#e-thumbs').addEventListener('click', e => { const b = e.target.closest('.th-x'); if (!b) return; pending.splice(+b.dataset.i, 1); renderThumbs(); });
+  $('#e-files').addEventListener('change', async e => {
+    const files = [...e.target.files]; e.target.value = '';
+    const room = MAX_PHOTOS - pending.length;
+    if (files.length > room) toast(`Maximum ${MAX_PHOTOS} photos par épreuve`);
+    for (const f of files.slice(0, Math.max(room, 0))) {
+      try {
+        const p = await compress(f);
+        if (pending.some(q => close(q.hash, p.hash))) { toast('Photo en double ignorée'); continue; }
+        pending.push(p); renderThumbs();
+      } catch (err) { toast(err.message); }
+    }
+  });
+  const close = (h1, h2) => { let d = 0; for (let i = 0; i < 64; i++) if (h1[i] !== h2[i]) d++; return d <= 6; };
+  let dupExam = null;
+  async function checkDup() {
+    const sub = $('#e-subject').value.trim(), box = $('#exam-dup'), lvl = $('#e-level').value, yr = $('#e-year').value, ty = $('#e-type').value;
+    dupExam = null;
+    if (sub && lvl && yr) {
+      try {
+        const r = await api('/api/exams?' + new URLSearchParams({ subject: sub, level: lvl, years: yr, type: ty }));
+        dupExam = (r.exams || []).find(x => nrm(x.subject) === nrm(sub)) || null;
+      } catch (e) {}
+    }
+    if (dupExam) {
+      const n = (dupExam.images || []).length;
+      box.innerHTML = `<b>Cette épreuve existe déjà</b> (${n} page${n > 1 ? 's' : ''}). Regarde-la d'abord. S'il manque des pages, ajoute-les : les photos déjà présentes seront ignorées automatiquement.<button type="button" class="btn ghost" id="dup-see">Voir l'épreuve existante</button>`;
+      box.hidden = false;
+    } else box.hidden = true;
+    $('#exam-submit').textContent = dupExam ? 'Compléter l\'épreuve' : 'Publier l\'épreuve';
+  }
+  $('#exam-dup').addEventListener('click', e => { if (e.target.id === 'dup-see' && dupExam) openViewer(dupExam); });
+  ['#e-subject', '#e-level', '#e-year', '#e-type'].forEach(id => $(id).addEventListener('change', checkDup));
+  $('#exam-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('#exam-err'); err.textContent = '';
+    if (!pending.length) { err.textContent = 'Ajoute au moins une photo.'; return; }
+    const btn = $('#exam-submit'); btn.disabled = true; btn.textContent = 'Envoi…';
+    try {
+      const r = await api('/api/exams', { method: 'POST', body: JSON.stringify({
+        subject: $('#e-subject').value.trim(), level: $('#e-level').value, year: +$('#e-year').value, type: $('#e-type').value,
+        field: $('#e-field').value.trim(), images: pending.map(p => p.src), hashes: pending.map(p => p.hash) }) });
+      examOv.hidden = true;
+      if (!r.merged) toast('Épreuve publiée. Merci !');
+      else if (!r.added) toast('Cette épreuve était déjà complète. Merci quand même !');
+      else toast(`${r.added} page${r.added > 1 ? 's' : ''} ajoutée${r.added > 1 ? 's' : ''}` + (r.skipped ? `, ${r.skipped} déjà présente${r.skipped > 1 ? 's' : ''} ignorée${r.skipped > 1 ? 's' : ''}` : ''));
+      searchExams(); refreshSubjects();
+    } catch (ex) { err.textContent = ex.message; }
+    btn.disabled = false; btn.textContent = 'Publier l\'épreuve';
+  });
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSide(); profOv.hidden = true; overlay.hidden = true; examOv.hidden = true; viewer.hidden = true; } });
+  grow(); loadMe();
+})();
+
+</script>
+</body>
+</html>
