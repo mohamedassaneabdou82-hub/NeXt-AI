@@ -393,15 +393,60 @@ button.me:hover{background:var(--soft)}
 (function () {
   var SB = 'https://ukfjpkmaknzqjqscpkde.supabase.co', KEY = 'sb_publishable_0lwaoIBeXYpSieaO0wgrtw_PcZhnZ8q';
   var real = window.fetch.bind(window);
-  var H = { apikey: KEY, 'Content-Type': 'application/json' };
   function g(k, d) { try { var v = localStorage.getItem('nx_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function s(k, v) { try { localStorage.setItem('nx_' + k, JSON.stringify(v)); } catch (e) {} }
   var norm = function (t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
   var STOP = ['les','des','une','que','qui','pour','avec','dans','cherche','je','un','le','la','de','du','et','en','au','sur','quelqu','trouver','veux','besoin','partenaire'];
   function res(data, status) { return Promise.resolve(new Response(JSON.stringify(data), { status: status || 200, headers: { 'Content-Type': 'application/json' } })); }
   function fail(msg, status) { return res({ detail: msg }, status || 400); }
+  function sess() { return g('sess', null); }
+  function hdr() { var t = sess(), o = { apikey: KEY, 'Content-Type': 'application/json' }; if (t) o.Authorization = 'Bearer ' + t.access_token; return o; }
+  async function authCall(path, payload) {
+    var r = await real(SB + '/auth/v1/' + path, { method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(d.msg || d.error_description || d.message || 'Erreur');
+    return d;
+  }
+  function saveSess(d) { s('sess', { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Math.floor(Date.now() / 1000) + (d.expires_in || 3600), user: d.user }); }
+  async function fresh() {
+    var t = sess(); if (!t || t.expires_at * 1000 > Date.now() + 60000) return;
+    try { saveSess(await authCall('token?grant_type=refresh_token', { refresh_token: t.refresh_token })); } catch (e) { s('sess', null); location.reload(); }
+  }
+  function tr(m) {
+    m = String(m);
+    if (/invalid login/i.test(m)) return 'E-mail ou mot de passe incorrect.';
+    if (/already registered/i.test(m)) return 'Ce compte existe déjà : connecte-toi.';
+    if (/rate limit/i.test(m)) return 'Trop d’essais. Réessaie dans quelques minutes.';
+    if (/password/i.test(m)) return 'Mot de passe trop court ou trop faible (6 caractères minimum).';
+    return 'Connexion impossible : ' + m;
+  }
+  function showAuth() {
+    var mode = 'in', box = document.createElement('div');
+    var fld = 'border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;font-size:16px';
+    box.style.cssText = 'position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
+    box.innerHTML = '<form id="au-f" style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px"><h2 style="font-family:var(--display);font-size:30px;margin:0">Bienvenue sur NeXt</h2><p style="margin:0;color:var(--ink-2)">Connecte-toi pour trouver des partenaires de projet.</p><input id="au-e" type="email" placeholder="Adresse e-mail" autocomplete="email" required style="' + fld + '"><input id="au-p" type="password" placeholder="Mot de passe (6 caractères minimum)" autocomplete="current-password" required minlength="6" style="' + fld + '"><button class="btn primary" id="au-b" type="submit">Se connecter</button><button type="button" id="au-sw" style="border:0;background:none;color:var(--accent);font-weight:600;padding:8px">Pas de compte ? Créer un compte</button><p id="au-err" style="color:var(--err);margin:0;min-height:1.2em;font-size:14px"></p></form>';
+    document.body.appendChild(box);
+    var q = function (i) { return box.querySelector(i); };
+    q('#au-sw').onclick = function () {
+      mode = mode === 'in' ? 'up' : 'in';
+      q('#au-b').textContent = mode === 'in' ? 'Se connecter' : 'Créer mon compte';
+      q('#au-sw').textContent = mode === 'in' ? 'Pas de compte ? Créer un compte' : 'Déjà un compte ? Se connecter';
+      q('#au-err').textContent = '';
+    };
+    q('#au-f').onsubmit = async function (ev) {
+      ev.preventDefault(); q('#au-err').textContent = ''; q('#au-b').disabled = true;
+      try {
+        var pl = { email: q('#au-e').value.trim(), password: q('#au-p').value };
+        var d = await authCall(mode === 'in' ? 'token?grant_type=password' : 'signup', pl);
+        if (!d.access_token) { q('#au-err').textContent = 'Compte créé. Confirme ton e-mail, puis connecte-toi.'; }
+        else { saveSess(d); location.reload(); return; }
+      } catch (e) { q('#au-err').textContent = tr(e.message); }
+      q('#au-b').disabled = false;
+    };
+  }
   async function db(path, opts) {
-    var r = await real(SB + '/rest/v1/' + path, Object.assign({ headers: H }, opts || {}));
+    var r = await real(SB + '/rest/v1/' + path, Object.assign({ headers: hdr() }, opts || {}));
+    if (r.status === 401) { s('sess', null); location.reload(); }
     if (!r.ok) throw new Error('db ' + r.status);
     var t = await r.text();
     return t ? JSON.parse(t) : null;
@@ -411,7 +456,7 @@ button.me:hover{background:var(--soft)}
     var b = await (await real(dataUrl)).blob();
     var ext = ((b.type || 'image/jpeg').split('/')[1] || 'jpg').split('+')[0];
     var p = Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
-    var r = await real(SB + '/storage/v1/object/exams/' + p, { method: 'POST', headers: { apikey: KEY, 'Content-Type': b.type || 'image/jpeg' }, body: b });
+    var r = await real(SB + '/storage/v1/object/exams/' + p, { method: 'POST', headers: Object.assign(hdr(), { 'Content-Type': b.type || 'image/jpeg' }), body: b });
     if (!r.ok) throw new Error('upload ' + r.status);
     return SB + '/storage/v1/object/public/exams/' + p;
   }
@@ -421,17 +466,20 @@ button.me:hover{background:var(--soft)}
   async function handle(url, opts) {
     var u = new URL(url, 'http://x'), path = u.pathname, m = (opts.method || 'GET').toUpperCase();
     var body = {}; try { body = opts.body ? JSON.parse(opts.body) : {}; } catch (e) {}
+    await fresh();
+    if (!sess()) return fail('Connecte-toi pour continuer.', 401);
 
     if (path === '/api/me') {
-      if (m === 'GET') return res(g('me', {}));
-      if (m === 'DELETE') { s('me', {}); return res({ ok: true }); }
+      var uid = sess().user.id;
+      var fromRow = function (r) { var n = String(r.full_name || '').trim().split(/\s+/); return { first_name: n[0] || '', last_name: n.slice(1).join(' '), phone: r.contact, field: r.faculty, skills: r.bio, offer: r.offer, gender: r.gender, email: sess().user.email }; };
+      if (m === 'DELETE') { await db('students?user_id=eq.' + uid, { method: 'DELETE' }); return res({ ok: true }); }
+      if (m === 'GET') { var rows = await db('students?user_id=eq.' + uid + '&select=*'); return res(rows && rows[0] ? fromRow(rows[0]) : {}); }
       if (!body.consent) return fail('Coche la case pour accepter que ton profil soit visible.');
-      var me = { first_name: body.first_name, last_name: body.last_name, phone: body.phone, field: body.field, skills: body.skills, email: body.email, gender: body.gender, offer: body.offer };
-      var old = g('me', {});
-      if (!old.first_name) {
-        await db('students', { method: 'POST', body: JSON.stringify({ full_name: ((me.first_name || '') + ' ' + (me.last_name || '')).trim(), gender: me.gender, faculty: me.field, bio: me.skills, offer: me.offer, contact: me.phone }) });
-      }
-      s('me', me); return res(me);
+      var row = { full_name: ((body.first_name || '') + ' ' + (body.last_name || '')).trim(), gender: body.gender, faculty: body.field, bio: body.skills, offer: body.offer, contact: body.phone };
+      var ex = await db('students?user_id=eq.' + uid + '&select=id');
+      if (ex && ex[0]) await db('students?user_id=eq.' + uid, { method: 'PATCH', body: JSON.stringify(row) });
+      else await db('students', { method: 'POST', body: JSON.stringify(Object.assign({ user_id: uid }, row)) });
+      return res(fromRow(row));
     }
     if (path === '/api/ask') {
       var all = (await db('students?select=*')).map(toStudent);
@@ -479,6 +527,7 @@ button.me:hover{background:var(--soft)}
     return fail('Introuvable', 404);
   }
 
+  if (!sess()) showAuth();
   window.fetch = function (url, opts) {
     if (typeof url === 'string' && url.indexOf('/api/') === 0) {
       return handle(url, opts || {}).catch(function () { return fail('Connexion à la base de données impossible. Réessaie dans un instant.', 500); });
