@@ -354,7 +354,7 @@ button.me:hover{background:var(--soft)}
         <label>Nom<input id="u-last" autocomplete="family-name" required></label>
       </div>
       <label>Numéro de téléphone<input id="u-phone" type="tel" placeholder="+227 90 00 00 00" autocomplete="tel" required></label>
-      <label>Visibilité du numéro<select id="u-phonevis"><option value="0">Privé : visible seulement si j’accepte une demande</option><option value="1">Public : visible par tous les étudiants</option></select></label>
+      <label>Visibilité du numéro<select id="u-phonevis"><option value="0">Privé : visible seulement si j’accepte une demande</option><option value="1">Public : visible par tous les membres</option></select></label>
       <label>Sexe
         <select id="u-gender" required>
           <option value="">Choisir</option>
@@ -366,7 +366,7 @@ button.me:hover{background:var(--soft)}
       <label>Compétences<input id="u-skills" placeholder="Ex. : programmation, design, marketing" required></label>
       <label>Parlez-nous du produit ou du service que vous proposez (facultatif)<input id="u-offer" placeholder="Ce que vous vendez ou proposez, pour que vos futurs clients vous situent. Laissez vide si vous n’en avez pas."></label>
       <label>Adresse Gmail (facultatif)<input id="u-email" type="email" placeholder="exemple@gmail.com" autocomplete="email"></label>
-      <label class="check"><input type="checkbox" id="u-consent"> <span>J'accepte que mon nom, mon sexe, ma filière, mes compétences, mon produit ou service soient visibles par les autres étudiants sur NeXt, et que mon numéro suive l’option de visibilité choisie.</span></label>
+      <label class="check"><input type="checkbox" id="u-consent"> <span>J'accepte que mon nom, mon sexe, ma filière, mes compétences, mon produit ou service soient visibles par les autres membres de NeXt, et que mon numéro suive l’option de visibilité choisie.</span></label>
       <button class="btn primary" type="submit" id="prof-submit">Enregistrer mon profil</button>
       <p class="err" id="prof-err"></p>
     </form>
@@ -420,7 +420,7 @@ button.me:hover{background:var(--soft)}
   <div class="sheet-head"><h3 id="bl-st">Nouvel article</h3><button class="x" id="bl-x" type="button" aria-label="Fermer">×</button></div>
   <form class="stack" id="bl-f">
     <label>Type<select id="bl-kind"><option value="produit">Produit ou service</option><option value="épreuve">Épreuve</option><option value="autre">Autre</option></select></label>
-    <label>Visibilité<select id="bl-vis"><option value="1">Public : visible par tous les étudiants</option><option value="0">Privé : visible par moi seul</option></select></label>
+    <label>Visibilité<select id="bl-vis"><option value="1">Public : visible par tous les membres</option><option value="0">Privé : visible par moi seul</option></select></label>
     <label>Titre<input id="bl-title" required></label>
     <label>Texte<textarea id="bl-body" rows="5"></textarea></label>
     <label>Photos (facultatif)<input id="bl-img" type="file" accept="image/*" multiple></label>
@@ -436,7 +436,7 @@ button.me:hover{background:var(--soft)}
   function g(k, d) { try { var v = localStorage.getItem('nx_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function s(k, v) { try { localStorage.setItem('nx_' + k, JSON.stringify(v)); } catch (e) {} }
   var norm = function (t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
-  var STOP = ['les','des','une','que','qui','pour','avec','dans','cherche','je','un','le','la','de','du','et','en','au','sur','quelqu','trouver','veux','besoin','partenaire'];
+  var STOP = ['les','des','une','que','qui','pour','avec','dans','cherche','je','un','le','la','de','du','et','en','au','sur','quelqu','trouver','veux','besoin','partenaire','partenaires','etudiant','etudiants','membre','membres'];
   function res(data, status) { return Promise.resolve(new Response(JSON.stringify(data), { status: status || 200, headers: { 'Content-Type': 'application/json' } })); }
   function fail(msg, status) { return res({ detail: msg }, status || 400); }
   function sess() { return g('sess', null); }
@@ -464,7 +464,7 @@ button.me:hover{background:var(--soft)}
     var mode = 'in', box = document.createElement('div');
     var fld = 'border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;font-size:16px';
     box.style.cssText = 'position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
-    box.innerHTML = '<form id="au-f" style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px"><h2 style="font-family:var(--display);font-size:30px;margin:0">Bienvenue sur NeXt</h2><p style="margin:0;color:var(--ink-2)">Connecte-toi pour trouver des partenaires de projet.</p><input id="au-e" type="email" placeholder="Adresse e-mail" autocomplete="email" required style="' + fld + '"><input id="au-p" type="password" placeholder="Mot de passe (6 caractères minimum)" autocomplete="current-password" required minlength="6" style="' + fld + '"><button class="btn primary" id="au-b" type="submit">Se connecter</button><button type="button" id="au-sw" style="border:0;background:none;color:var(--accent);font-weight:600;padding:8px">Pas de compte ? Créer un compte</button><p id="au-err" style="color:var(--err);margin:0;min-height:1.2em;font-size:14px"></p></form>';
+    box.innerHTML = '<form id="au-f" style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px"><h2 style="font-family:var(--display);font-size:30px;margin:0">Bienvenue sur NeXt</h2><p style="margin:0;color:var(--ink-2)">Connecte-toi pour découvrir plein de choses.</p><input id="au-e" type="email" placeholder="Adresse e-mail" autocomplete="email" required style="' + fld + '"><input id="au-p" type="password" placeholder="Mot de passe (6 caractères minimum)" autocomplete="current-password" required minlength="6" style="' + fld + '"><button class="btn primary" id="au-b" type="submit">Se connecter</button><button type="button" id="au-sw" style="border:0;background:none;color:var(--accent);font-weight:600;padding:8px">Pas de compte ? Créer un compte</button><p id="au-err" style="color:var(--err);margin:0;min-height:1.2em;font-size:14px"></p></form>';
     document.body.appendChild(box);
     var q = function (i) { return box.querySelector(i); };
     q('#au-sw').onclick = function () {
@@ -549,7 +549,7 @@ button.me:hover{background:var(--soft)}
       var meU = sess().user.id, dup = await db('contact_requests?from_user=eq.' + meU + '&to_user=eq.' + encodeURIComponent(body.to_user) + '&select=id');
       if (dup && dup[0]) return res({ ok: true });
       var nm = await db('students?user_id=eq.' + meU + '&select=full_name');
-      await db('contact_requests', { method: 'POST', body: JSON.stringify({ to_user: body.to_user, from_name: (nm && nm[0] && nm[0].full_name) || String(sess().user.email || 'Étudiant').split('@')[0] }) });
+      await db('contact_requests', { method: 'POST', body: JSON.stringify({ to_user: body.to_user, from_name: (nm && nm[0] && nm[0].full_name) || String(sess().user.email || 'Membre').split('@')[0] }) });
       return res({ ok: true });
     }
     if (path === '/api/requests') {
@@ -565,7 +565,7 @@ button.me:hover{background:var(--soft)}
         var rowp = { is_public: body.is_public !== false, kind: body.kind || 'produit', title: body.title, body: body.body || '', images: imgs };
         if (body.id) { await db('posts?id=eq.' + encodeURIComponent(body.id), { method: 'PATCH', body: JSON.stringify(rowp) }); return res({ ok: true }); }
         var me2 = await db('students?user_id=eq.' + uid2 + '&select=full_name');
-        rowp.author = (me2 && me2[0] && me2[0].full_name) || String(sess().user.email || 'Étudiant').split('@')[0];
+        rowp.author = (me2 && me2[0] && me2[0].full_name) || String(sess().user.email || 'Membre').split('@')[0];
         rowp.user_id = uid2;
         await db('posts', { method: 'POST', body: JSON.stringify(rowp) }); return res({ ok: true });
       }
@@ -693,7 +693,7 @@ button.me:hover{background:var(--soft)}
         first_name: $('#u-first').value, last_name: $('#u-last').value, phone: $('#u-phone').value, phone_public: $('#u-phonevis').value === '1',
         field: $('#u-field').value, skills: $('#u-skills').value, email: $('#u-email').value,
         gender: $('#u-gender').value, offer: $('#u-offer').value, consent: $('#u-consent').checked }) });
-      profOv.hidden = true; renderMe(); toast('Profil enregistré. Les autres étudiants peuvent maintenant te trouver.');
+      profOv.hidden = true; renderMe(); toast('Profil enregistré. Les autres membres peuvent maintenant te trouver.');
     } catch (err) { $('#prof-err').textContent = err.message; }
   });
 
@@ -726,7 +726,7 @@ button.me:hover{background:var(--soft)}
     const box = $('#rq-list'); box.innerHTML = '<p class="muted">Chargement…</p>';
     try {
       const d = await api('/api/requests');
-      box.innerHTML = (d.requests || []).length ? d.requests.map(r => `<div class="bl-card"><h3>${esc(r.from_name || 'Un étudiant')}</h3><small>${r.status === 'pending' ? 'Souhaite avoir ton numéro pour te contacter.' : r.status === 'accepted' ? 'Demande acceptée : cette personne voit ton numéro.' : 'Demande refusée.'}</small>${r.status === 'pending' ? `<div class="bl-act"><button type="button" class="btn primary" data-id="${esc(r.id)}" data-ans="accepted">Accepter</button><button type="button" class="btn" data-id="${esc(r.id)}" data-ans="declined">Refuser</button></div>` : (r.status === 'accepted' ? `<div class="bl-act"><button type="button" class="btn" data-id="${esc(r.id)}" data-ans="declined">Retirer l’accès</button></div>` : '')}</div>`).join('') : '<p class="muted">Aucune demande de contact pour le moment.</p>';
+      box.innerHTML = (d.requests || []).length ? d.requests.map(r => `<div class="bl-card"><h3>${esc(r.from_name || 'Un membre')}</h3><small>${r.status === 'pending' ? 'Souhaite avoir ton numéro pour te contacter.' : r.status === 'accepted' ? 'Demande acceptée : cette personne voit ton numéro.' : 'Demande refusée.'}</small>${r.status === 'pending' ? `<div class="bl-act"><button type="button" class="btn primary" data-id="${esc(r.id)}" data-ans="accepted">Accepter</button><button type="button" class="btn" data-id="${esc(r.id)}" data-ans="declined">Refuser</button></div>` : (r.status === 'accepted' ? `<div class="bl-act"><button type="button" class="btn" data-id="${esc(r.id)}" data-ans="declined">Retirer l’accès</button></div>` : '')}</div>`).join('') : '<p class="muted">Aucune demande de contact pour le moment.</p>';
     } catch (e) { box.innerHTML = '<p class="err">Impossible de charger les demandes.</p>'; }
   }
   $('#rq-list').addEventListener('click', async e => { const b = e.target.closest('[data-ans]'); if (!b) return; b.disabled = true; try { await api('/api/requests', { method: 'POST', body: JSON.stringify({ id: b.dataset.id, status: b.dataset.ans }) }); loadReq(); } catch (er) { toast('Action impossible'); b.disabled = false; } });
