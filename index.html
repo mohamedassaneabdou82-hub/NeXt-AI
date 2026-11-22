@@ -192,6 +192,14 @@ button.me:hover{background:var(--soft)}
 .top{padding-top:calc(14px + env(safe-area-inset-top,0px))}
 .demo{margin:0 16px;padding:6px 12px;background:#FFF1E6;color:#8A3B05;border-radius:10px;font-size:12.5px;text-align:center}
 
+.navlink.on{background:var(--soft);color:var(--ink)}
+.bl-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.bl-card h3{margin:8px 0 4px;font-family:var(--display);font-size:19px}.bl-card p{margin:0 0 8px;white-space:pre-wrap;color:var(--ink-2)}
+.bl-card small{display:block;color:var(--ink-3);font-size:12.5px}
+.bl-imgs{display:flex;gap:8px;overflow-x:auto;margin:6px 0 8px}.bl-imgs img{height:110px;border-radius:10px;cursor:pointer}
+.bl-act{display:flex;gap:8px;margin-top:10px}
+.bl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bl-grid figure{margin:0}.bl-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;cursor:pointer}
+.bl-grid figcaption{font-size:12px;color:var(--ink-3);margin-top:4px}
 </style>
 <script>window.__API_BASE__ = '';</script>
 </head>
@@ -219,6 +227,10 @@ button.me:hover{background:var(--soft)}
     <button class="side-item" data-go="exams">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
       Épreuves
+    </button>
+    <button class="side-item" data-go="blog">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+      Blogs
     </button>
     <button class="side-item" data-go="founder">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -289,6 +301,14 @@ button.me:hover{background:var(--soft)}
       <p class="contact" id="f-contact"></p>
       <button class="edit-link" id="author-edit">Modifier</button>
     </article>
+  </section>
+  <section id="view-blog" class="view">
+    <div class="exams">
+      <div class="exams-head"><h2>Blogs</h2><button class="btn primary" id="bl-new">+ Écrire</button></div>
+      <form id="bl-search" class="stack search-box"><input id="bl-q" placeholder="Rechercher un produit, une épreuve, un auteur…" autocomplete="off"></form>
+      <div id="bl-tabs" style="display:flex;gap:8px;margin:12px 0"><button type="button" class="navlink on" data-t="posts">Articles</button><button type="button" class="navlink" data-t="images">Images</button><button type="button" class="navlink" data-t="mine">Mon blog</button></div>
+      <div id="bl-list"></div>
+    </div>
   </section>
 </main>
 
@@ -389,6 +409,17 @@ button.me:hover{background:var(--soft)}
   <div class="viewer-body" id="viewer-body"></div>
 </div>
 
+<div class="overlay" id="bl-ov" hidden><div class="sheet">
+  <div class="sheet-head"><h3 id="bl-st">Nouvel article</h3><button class="x" id="bl-x" type="button" aria-label="Fermer">×</button></div>
+  <form class="stack" id="bl-f">
+    <label>Type<select id="bl-kind"><option value="produit">Produit ou service</option><option value="épreuve">Épreuve</option><option value="autre">Autre</option></select></label>
+    <label>Titre<input id="bl-title" required></label>
+    <label>Texte<textarea id="bl-body" rows="5"></textarea></label>
+    <label>Photos (facultatif)<input id="bl-img" type="file" accept="image/*" multiple></label>
+    <div id="bl-prev"></div>
+    <button class="btn primary" type="submit">Publier</button>
+    <p class="err" id="bl-err"></p>
+  </form></div></div>
 <div id="toast" class="toast" role="status"></div>
 <script>
 (function () {
@@ -489,8 +520,29 @@ button.me:hover{background:var(--soft)}
         var hay = norm([p.field, p.skills, p.offer, p.name, p.gender].join(' '));
         return { p: p, n: toks.filter(function (w) { return hay.indexOf(w) >= 0; }).length };
       }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
-      if (!scored.length) return res({ found: false, answer: 'Je n’ai trouvé personne pour l’instant. Essaie avec d’autres mots, par exemple une compétence (design, marketing…) ou une filière.', matches: [] });
-      return res({ found: true, answer: 'Voici les étudiants qui correspondent le mieux à ta recherche :', matches: scored.map(function (x) { return x.p; }) });
+      var ps = []; try { ps = await db('posts?select=id,title,body,author,kind'); } catch (e) {}
+      var pm = ps.map(function (x) { var hay = norm([x.title, x.body, x.author, x.kind].join(' ')); return { x: x, n: toks.filter(function (w) { return hay.indexOf(w) >= 0; }).length }; }).filter(function (y) { return y.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+      if (!scored.length && !pm.length) return res({ found: false, answer: 'Je n’ai trouvé personne ni aucun article pour l’instant. Essaie avec d’autres mots, par exemple une compétence (design, marketing…) ou une filière.', matches: [], sources: [] });
+      var srcs = scored.map(function (x) { return { label: 'Profil de ' + x.p.name }; }).concat(pm.map(function (y) { return { label: 'Article « ' + y.x.title + ' » — blog de ' + y.x.author, post: y.x.id, q: y.x.title }; }));
+      var lines = pm.map(function (y) { return '• ' + y.x.title + ' (' + y.x.kind + ', par ' + y.x.author + ')'; });
+      return res({ found: true, answer: 'Voici ce que j’ai trouvé sur NeXt :' + (lines.length ? '\n' + lines.join('\n') : ''), matches: scored.map(function (x) { return x.p; }), sources: srcs });
+    }
+    if (path === '/api/posts') {
+      var uid2 = sess().user.id;
+      if (m === 'DELETE') { await db('posts?id=eq.' + encodeURIComponent(u.searchParams.get('id')), { method: 'DELETE' }); return res({ ok: true }); }
+      if (m === 'POST') {
+        if (!body.title) return fail('Ajoute un titre.');
+        var imgs = []; for (var i2 = 0; i2 < (body.images || []).length; i2++) { var im2 = body.images[i2]; imgs.push(im2.indexOf('data:') === 0 ? await upload(im2) : im2); }
+        var rowp = { kind: body.kind || 'produit', title: body.title, body: body.body || '', images: imgs };
+        if (body.id) { await db('posts?id=eq.' + encodeURIComponent(body.id), { method: 'PATCH', body: JSON.stringify(rowp) }); return res({ ok: true }); }
+        var me2 = await db('students?user_id=eq.' + uid2 + '&select=full_name');
+        rowp.author = (me2 && me2[0] && me2[0].full_name) || String(sess().user.email || 'Étudiant').split('@')[0];
+        rowp.user_id = uid2;
+        await db('posts', { method: 'POST', body: JSON.stringify(rowp) }); return res({ ok: true });
+      }
+      var allp = await db('posts?select=*&order=created_at.desc');
+      var qq = norm(u.searchParams.get('q')), mine = u.searchParams.get('mine');
+      return res({ posts: allp.filter(function (x) { return (!mine || x.user_id === uid2) && (!qq || norm([x.title, x.body, x.author, x.kind].join(' ')).indexOf(qq) >= 0); }).map(function (x) { x.mine = x.user_id === uid2; return x; }) });
     }
     if (path === '/api/exams') {
       var list = (await db('exams?select=*')).map(toExam);
@@ -563,6 +615,7 @@ button.me:hover{background:var(--soft)}
     document.querySelectorAll('.view').forEach(x => x.classList.toggle('active', x.id === 'view-' + v));
     if (v === 'founder') loadAuthor();
     if (v === 'exams') initExams();
+    if (v === 'blog') initBlog();
   }
   document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.new) resetChat(); go(b.dataset.go); closeSide(); }));
 
@@ -643,9 +696,63 @@ button.me:hover{background:var(--soft)}
             <div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>
             <div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>
           </div>
-        </div>`).join('');
+        </div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
+  });
+
+  /* ---------- blogs ---------- */
+  let blTab = 'posts', blImgs = [], blEdit = null, blData = [];
+  const blOv = $('#bl-ov');
+  function srcHtml(s) {
+    s = s || [];
+    if (!s.length) return '<span class="src">Source : aucune donnée NeXt ne correspond à cette recherche.</span>';
+    return '<span class="src">Sources : ' + s.map(x => x.post ? `<a href="#" class="srclink" data-q="${esc(x.q)}">${esc(x.label)}</a>` : esc(x.label)).join(' · ') + '</span>';
+  }
+  thread.addEventListener('click', e => { const a = e.target.closest('.srclink'); if (!a) return; e.preventDefault(); $('#bl-q').value = a.dataset.q || ''; blTab = 'posts'; go('blog'); });
+  function shrink(file) {
+    return new Promise(ok => {
+      const r = new FileReader();
+      r.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, 1000 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = im.width * k; c.height = im.height * k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', .72)); }; im.onerror = () => ok(null); im.src = r.result; };
+      r.readAsDataURL(file);
+    });
+  }
+  function blRender() {
+    const box = $('#bl-list');
+    if (!blData.length) { box.innerHTML = '<p class="muted">Rien pour le moment. Sois le premier à publier : appuie sur « + Écrire ».</p>'; return; }
+    if (blTab === 'images') {
+      const items = blData.flatMap(p => (p.images || []).map(src => ({ src, p })));
+      box.innerHTML = items.length ? `<div class="bl-grid">${items.map(i => `<figure><img src="${esc(i.src)}" alt="${esc(i.p.title)}" data-src="${esc(i.src)}"><figcaption>Source : ${esc(i.p.author)} — ${esc(i.p.title)}</figcaption></figure>`).join('')}</div>` : '<p class="muted">Aucune image trouvée.</p>';
+      return;
+    }
+    box.innerHTML = blData.map((p, i) => `<article class="bl-card"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p>${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</small>${p.mine ? `<div class="bl-act"><button type="button" class="btn" data-act="edit" data-i="${i}">Modifier</button><button type="button" class="btn" data-act="del" data-i="${i}">Supprimer</button></div>` : ''}</article>`).join('');
+  }
+  async function loadBlog() {
+    $('#bl-list').innerHTML = '<p class="muted">Chargement…</p>';
+    try { const d = await api('/api/posts?q=' + encodeURIComponent($('#bl-q').value.trim()) + (blTab === 'mine' ? '&mine=1' : '')); blData = d.posts || []; blRender(); }
+    catch (e) { $('#bl-list').innerHTML = '<p class="err">Impossible de charger les blogs.</p>'; }
+  }
+  function initBlog() { document.querySelectorAll('#bl-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === blTab)); loadBlog(); }
+  function blPrev() { $('#bl-prev').innerHTML = blImgs.map((s, i) => `<img src="${esc(s)}" data-i="${i}" alt="Photo ${i + 1}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin:0 6px 6px 0">`).join('') + (blImgs.length ? '<p class="muted" style="font-size:12px;margin:0">Touche une photo pour la retirer.</p>' : ''); }
+  function blOpen(p) { blEdit = p || null; blImgs = p ? (p.images || []).slice() : []; $('#bl-st').textContent = p ? 'Modifier l’article' : 'Nouvel article'; $('#bl-kind').value = p ? p.kind : 'produit'; $('#bl-title').value = p ? p.title : ''; $('#bl-body').value = p ? p.body : ''; $('#bl-err').textContent = ''; blPrev(); blOv.hidden = false; }
+  $('#bl-search').addEventListener('submit', e => { e.preventDefault(); loadBlog(); });
+  $('#bl-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; blTab = b.dataset.t; initBlog(); });
+  $('#bl-list').addEventListener('click', async e => {
+    const im = e.target.closest('img[data-src]');
+    if (im) { $('#viewer-body').innerHTML = `<img src="${esc(im.dataset.src)}" alt="">`; viewer.hidden = false; viewer.scrollTop = 0; return; }
+    const b = e.target.closest('[data-act]'); if (!b) return; const p = blData[+b.dataset.i];
+    if (b.dataset.act === 'del') { if (!confirm('Supprimer cet article ?')) return; try { await api('/api/posts?id=' + p.id, { method: 'DELETE' }); toast('Article supprimé'); loadBlog(); } catch (er) { toast('Suppression impossible'); } }
+    else blOpen(p);
+  });
+  $('#bl-prev').addEventListener('click', e => { const i = e.target.dataset.i; if (i === undefined) return; blImgs.splice(+i, 1); blPrev(); });
+  $('#bl-img').addEventListener('change', async e => { for (const f of [...e.target.files].slice(0, 6)) { const d = await shrink(f); if (d) blImgs.push(d); } e.target.value = ''; blPrev(); });
+  $('#bl-new').addEventListener('click', () => blOpen(null));
+  $('#bl-x').addEventListener('click', () => blOv.hidden = true);
+  $('#bl-f').addEventListener('submit', async e => {
+    e.preventDefault(); const b = e.target.querySelector('button[type=submit]'); b.disabled = true; $('#bl-err').textContent = '';
+    try { await api('/api/posts', { method: 'POST', body: JSON.stringify({ id: blEdit ? blEdit.id : undefined, kind: $('#bl-kind').value, title: $('#bl-title').value.trim(), body: $('#bl-body').value.trim(), images: blImgs }) }); blOv.hidden = true; toast('Article publié'); blTab = 'mine'; initBlog(); }
+    catch (er) { $('#bl-err').textContent = 'Publication impossible. Réessaie.'; }
+    b.disabled = false;
   });
 
   /* ---------- page d'auteur ---------- */
