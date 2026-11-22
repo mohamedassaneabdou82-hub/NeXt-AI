@@ -224,13 +224,13 @@ button.me:hover{background:var(--soft)}
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       Nouvelle discussion
     </button>
-    <button class="side-item" data-go="exams">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
-      Épreuves
-    </button>
     <button class="side-item" data-go="blog">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
       Blogs
+    </button>
+    <button class="side-item" data-go="req">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
+      Demandes de contact
     </button>
     <button class="side-item" data-go="founder">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -306,8 +306,14 @@ button.me:hover{background:var(--soft)}
     <div class="exams">
       <div class="exams-head"><h2>Blogs</h2><button class="btn primary" id="bl-new">+ Écrire</button></div>
       <form id="bl-search" class="stack search-box"><input id="bl-q" placeholder="Rechercher un produit, une épreuve, un auteur…" autocomplete="off"></form>
-      <div id="bl-tabs" style="display:flex;gap:8px;margin:12px 0"><button type="button" class="navlink on" data-t="posts">Articles</button><button type="button" class="navlink" data-t="images">Images</button><button type="button" class="navlink" data-t="mine">Mon blog</button></div>
+      <div id="bl-tabs" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap"><button type="button" class="navlink" data-t="chat">← Discussion</button><button type="button" class="navlink on" data-t="posts">Articles</button><button type="button" class="navlink" data-t="images">Images</button><button type="button" class="navlink" data-t="mine">Mon blog</button></div>
       <div id="bl-list"></div>
+    </div>
+  </section>
+  <section id="view-req" class="view">
+    <div class="exams">
+      <div class="exams-head"><h2>Demandes de contact</h2><button class="btn" id="rq-back" type="button">← Discussion</button></div>
+      <div id="rq-list"></div>
     </div>
   </section>
 </main>
@@ -348,6 +354,7 @@ button.me:hover{background:var(--soft)}
         <label>Nom<input id="u-last" autocomplete="family-name" required></label>
       </div>
       <label>Numéro de téléphone<input id="u-phone" type="tel" placeholder="+227 90 00 00 00" autocomplete="tel" required></label>
+      <label>Visibilité du numéro<select id="u-phonevis"><option value="0">Privé : visible seulement si j’accepte une demande</option><option value="1">Public : visible par tous les étudiants</option></select></label>
       <label>Sexe
         <select id="u-gender" required>
           <option value="">Choisir</option>
@@ -359,7 +366,7 @@ button.me:hover{background:var(--soft)}
       <label>Compétences<input id="u-skills" placeholder="Ex. : programmation, design, marketing" required></label>
       <label>Parlez-nous du produit ou du service que vous proposez (facultatif)<input id="u-offer" placeholder="Ce que vous vendez ou proposez, pour que vos futurs clients vous situent. Laissez vide si vous n’en avez pas."></label>
       <label>Adresse Gmail (facultatif)<input id="u-email" type="email" placeholder="exemple@gmail.com" autocomplete="email"></label>
-      <label class="check"><input type="checkbox" id="u-consent"> <span>J'accepte que mon nom, mon sexe, ma filière, mes compétences, mon produit ou service et mon numéro soient visibles par les autres étudiants sur NeXt.</span></label>
+      <label class="check"><input type="checkbox" id="u-consent"> <span>J'accepte que mon nom, mon sexe, ma filière, mes compétences, mon produit ou service soient visibles par les autres étudiants sur NeXt, et que mon numéro suive l’option de visibilité choisie.</span></label>
       <button class="btn primary" type="submit" id="prof-submit">Enregistrer mon profil</button>
       <p class="err" id="prof-err"></p>
     </form>
@@ -413,6 +420,7 @@ button.me:hover{background:var(--soft)}
   <div class="sheet-head"><h3 id="bl-st">Nouvel article</h3><button class="x" id="bl-x" type="button" aria-label="Fermer">×</button></div>
   <form class="stack" id="bl-f">
     <label>Type<select id="bl-kind"><option value="produit">Produit ou service</option><option value="épreuve">Épreuve</option><option value="autre">Autre</option></select></label>
+    <label>Visibilité<select id="bl-vis"><option value="1">Public : visible par tous les étudiants</option><option value="0">Privé : visible par moi seul</option></select></label>
     <label>Titre<input id="bl-title" required></label>
     <label>Texte<textarea id="bl-body" rows="5"></textarea></label>
     <label>Photos (facultatif)<input id="bl-img" type="file" accept="image/*" multiple></label>
@@ -503,29 +511,50 @@ button.me:hover{background:var(--soft)}
 
     if (path === '/api/me') {
       var uid = sess().user.id;
-      var fromRow = function (r) { var n = String(r.full_name || '').trim().split(/\s+/); return { first_name: n[0] || '', last_name: n.slice(1).join(' '), phone: r.contact, field: r.faculty, skills: r.bio, offer: r.offer, gender: r.gender, email: sess().user.email }; };
-      if (m === 'DELETE') { await db('students?user_id=eq.' + uid, { method: 'DELETE' }); return res({ ok: true }); }
-      if (m === 'GET') { var rows = await db('students?user_id=eq.' + uid + '&select=*'); return res(rows && rows[0] ? fromRow(rows[0]) : {}); }
+      var fromRow = function (r) { var n = String(r.full_name || '').trim().split(/\s+/); return { first_name: n[0] || '', last_name: n.slice(1).join(' '), phone: r.phone, phone_public: r.phone_public, field: r.faculty, skills: r.bio, offer: r.offer, gender: r.gender, email: sess().user.email }; };
+      if (m === 'DELETE') { await db('students?user_id=eq.' + uid, { method: 'DELETE' }); try { await db('contacts?user_id=eq.' + uid, { method: 'DELETE' }); } catch (e) {} return res({ ok: true }); }
+      if (m === 'GET') { var rows = await db('students?user_id=eq.' + uid + '&select=*'); var cr = []; try { cr = await db('contacts?user_id=eq.' + uid + '&select=*'); } catch (e) {} return res(rows && rows[0] ? fromRow(Object.assign({}, rows[0], { phone: cr && cr[0] ? cr[0].phone : '', phone_public: cr && cr[0] ? cr[0].is_public : false })) : {}); }
       if (!body.consent) return fail('Coche la case pour accepter que ton profil soit visible.');
-      var row = { full_name: ((body.first_name || '') + ' ' + (body.last_name || '')).trim(), gender: body.gender, faculty: body.field, bio: body.skills, offer: body.offer, contact: body.phone };
+      var row = { full_name: ((body.first_name || '') + ' ' + (body.last_name || '')).trim(), gender: body.gender, faculty: body.field, bio: body.skills, offer: body.offer, contact: null };
       var ex = await db('students?user_id=eq.' + uid + '&select=id');
       if (ex && ex[0]) await db('students?user_id=eq.' + uid, { method: 'PATCH', body: JSON.stringify(row) });
       else await db('students', { method: 'POST', body: JSON.stringify(Object.assign({ user_id: uid }, row)) });
-      return res(fromRow(row));
+      var cx = await db('contacts?user_id=eq.' + uid + '&select=user_id'), cd = { phone: body.phone, is_public: !!body.phone_public };
+      if (cx && cx[0]) await db('contacts?user_id=eq.' + uid, { method: 'PATCH', body: JSON.stringify(cd) });
+      else await db('contacts', { method: 'POST', body: JSON.stringify(Object.assign({ user_id: uid }, cd)) });
+      return res(fromRow(Object.assign({}, row, { phone: body.phone, phone_public: !!body.phone_public })));
     }
     if (path === '/api/ask') {
-      var all = (await db('students?select=*')).map(toStudent);
-      var toks = norm(body.q).split(/[^a-z0-9]+/).filter(function (w) { return w.length > 2 && STOP.indexOf(w) < 0; });
-      var scored = all.map(function (p) {
-        var hay = norm([p.field, p.skills, p.offer, p.name, p.gender].join(' '));
-        return { p: p, n: toks.filter(function (w) { return hay.indexOf(w) >= 0; }).length };
-      }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
-      var ps = []; try { ps = await db('posts?select=id,title,body,author,kind'); } catch (e) {}
-      var pm = ps.map(function (x) { var hay = norm([x.title, x.body, x.author, x.kind].join(' ')); return { x: x, n: toks.filter(function (w) { return hay.indexOf(w) >= 0; }).length }; }).filter(function (y) { return y.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
-      if (!scored.length && !pm.length) return res({ found: false, answer: 'Je n’ai trouvé personne ni aucun article pour l’instant. Essaie avec d’autres mots, par exemple une compétence (design, marketing…) ou une filière.', matches: [], sources: [] });
-      var srcs = scored.map(function (x) { return { label: 'Profil de ' + x.p.name }; }).concat(pm.map(function (y) { return { label: 'Article « ' + y.x.title + ' » — blog de ' + y.x.author, post: y.x.id, q: y.x.title }; }));
-      var lines = pm.map(function (y) { return '• ' + y.x.title + ' (' + y.x.kind + ', par ' + y.x.author + ')'; });
-      return res({ found: true, answer: 'Voici ce que j’ai trouvé sur NeXt :' + (lines.length ? '\n' + lines.join('\n') : ''), matches: scored.map(function (x) { return x.p; }), sources: srcs });
+      var qn = norm(body.q), EX = /^(epreuve|epreuves|examen|examens|sujet|sujets|partiel|partiels|devoir|devoirs|composition|compositions)$/;
+      var words = qn.split(/[^a-z0-9]+/);
+      var asksExam = words.some(function (w) { return EX.test(w); });
+      var toks = words.filter(function (w) { return w.length > 2 && STOP.indexOf(w) < 0 && !EX.test(w); });
+      var score = function (hay) { hay = norm(hay); return toks.filter(function (w) { return hay.indexOf(w) >= 0; }).length; };
+      var scored = [];
+      if (!asksExam) {
+        scored = (await db('students?select=*')).map(function (r) { var p = toStudent(r); return { p: { user_id: r.user_id, name: p.name, field: p.field, skills: p.skills, offer: p.offer }, n: score([p.field, p.skills, p.offer, p.name].join(' ')) }; }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+      }
+      if (scored.length) { try {
+        var ids = scored.map(function (x) { return x.p.user_id; }).filter(Boolean).join(',');
+        var cs = ids ? await db('contacts?user_id=in.(' + ids + ')&select=user_id,phone') : [], rq = ids ? await db('contact_requests?from_user=eq.' + sess().user.id + '&to_user=in.(' + ids + ')&select=to_user,status') : [];
+        scored.forEach(function (x) { var c = cs.filter(function (k) { return k.user_id === x.p.user_id; })[0], r2 = rq.filter(function (k) { return k.to_user === x.p.user_id; })[0]; x.p.phone = c && c.phone ? c.phone : ''; x.p.req = r2 ? r2.status : ''; x.p.me = x.p.user_id === sess().user.id; });
+      } catch (e) {} }
+      var ps = []; try { ps = await db('posts?select=*&is_public=eq.true&order=created_at.desc'); } catch (e) {}
+      var pm = ps.filter(function (x) { return !asksExam || x.kind === 'épreuve'; }).map(function (x) { return { x: x, n: score([x.title, x.body, x.author, x.kind].join(' ')) }; }).filter(function (y) { return toks.length ? y.n > 0 : asksExam; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+      if (!scored.length && !pm.length) return res({ found: false, answer: asksExam ? 'Je n’ai trouvé aucune épreuve correspondante pour l’instant. Tu peux en publier une dans ton blog.' : 'Je n’ai trouvé personne ni aucun article pour l’instant. Essaie avec d’autres mots, par exemple une compétence (design, marketing…) ou une filière.', matches: [], posts: [], sources: [] });
+      var srcs = scored.map(function (x) { return { label: 'Fiche de ' + x.p.name }; }).concat(pm.map(function (y) { return { label: 'Article « ' + y.x.title + ' » — blog de ' + y.x.author, post: y.x.id, q: y.x.title }; }));
+      return res({ found: true, answer: 'Voici ce que j’ai trouvé sur NeXt :', matches: scored.map(function (x) { return x.p; }), posts: pm.map(function (y) { return { id: y.x.id, kind: y.x.kind, title: y.x.title, body: String(y.x.body || '').slice(0, 160), images: (y.x.images || []).slice(0, 3), author: y.x.author }; }), sources: srcs });
+    }
+    if (path === '/api/contact-request' && m === 'POST') {
+      var meU = sess().user.id, dup = await db('contact_requests?from_user=eq.' + meU + '&to_user=eq.' + encodeURIComponent(body.to_user) + '&select=id');
+      if (dup && dup[0]) return res({ ok: true });
+      var nm = await db('students?user_id=eq.' + meU + '&select=full_name');
+      await db('contact_requests', { method: 'POST', body: JSON.stringify({ to_user: body.to_user, from_name: (nm && nm[0] && nm[0].full_name) || String(sess().user.email || 'Étudiant').split('@')[0] }) });
+      return res({ ok: true });
+    }
+    if (path === '/api/requests') {
+      if (m === 'POST') { await db('contact_requests?id=eq.' + encodeURIComponent(body.id), { method: 'PATCH', body: JSON.stringify({ status: body.status === 'accepted' ? 'accepted' : 'declined' }) }); return res({ ok: true }); }
+      return res({ requests: await db('contact_requests?to_user=eq.' + sess().user.id + '&select=*&order=created_at.desc') });
     }
     if (path === '/api/posts') {
       var uid2 = sess().user.id;
@@ -533,7 +562,7 @@ button.me:hover{background:var(--soft)}
       if (m === 'POST') {
         if (!body.title) return fail('Ajoute un titre.');
         var imgs = []; for (var i2 = 0; i2 < (body.images || []).length; i2++) { var im2 = body.images[i2]; imgs.push(im2.indexOf('data:') === 0 ? await upload(im2) : im2); }
-        var rowp = { kind: body.kind || 'produit', title: body.title, body: body.body || '', images: imgs };
+        var rowp = { is_public: body.is_public !== false, kind: body.kind || 'produit', title: body.title, body: body.body || '', images: imgs };
         if (body.id) { await db('posts?id=eq.' + encodeURIComponent(body.id), { method: 'PATCH', body: JSON.stringify(rowp) }); return res({ ok: true }); }
         var me2 = await db('students?user_id=eq.' + uid2 + '&select=full_name');
         rowp.author = (me2 && me2[0] && me2[0].full_name) || String(sess().user.email || 'Étudiant').split('@')[0];
@@ -616,6 +645,7 @@ button.me:hover{background:var(--soft)}
     if (v === 'founder') loadAuthor();
     if (v === 'exams') initExams();
     if (v === 'blog') initBlog();
+    if (v === 'req') loadReq();
   }
   document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.new) resetChat(); go(b.dataset.go); closeSide(); }));
 
@@ -648,7 +678,7 @@ button.me:hover{background:var(--soft)}
     const edit = !!me.first_name;
     $('#prof-title').textContent = edit ? 'Modifier mon profil' : 'Créer mon profil';
     $('#u-first').value = me.first_name || ''; $('#u-last').value = me.last_name || '';
-    $('#u-phone').value = me.phone || ''; $('#u-field').value = me.field || '';
+    $('#u-phone').value = me.phone || ''; $('#u-phonevis').value = me.phone_public ? '1' : '0'; $('#u-field').value = me.field || '';
     $('#u-skills').value = me.skills || ''; $('#u-email').value = me.email || '';
     $('#u-gender').value = me.gender || ''; $('#u-offer').value = me.offer || '';
     $('#u-consent').checked = edit && !!me.phone;
@@ -660,7 +690,7 @@ button.me:hover{background:var(--soft)}
     e.preventDefault();
     try {
       me = await api('/api/me', { method: 'POST', body: JSON.stringify({
-        first_name: $('#u-first').value, last_name: $('#u-last').value, phone: $('#u-phone').value,
+        first_name: $('#u-first').value, last_name: $('#u-last').value, phone: $('#u-phone').value, phone_public: $('#u-phonevis').value === '1',
         field: $('#u-field').value, skills: $('#u-skills').value, email: $('#u-email').value,
         gender: $('#u-gender').value, offer: $('#u-offer').value, consent: $('#u-consent').checked }) });
       profOv.hidden = true; renderMe(); toast('Profil enregistré. Les autres étudiants peuvent maintenant te trouver.');
@@ -686,20 +716,21 @@ button.me:hover{background:var(--soft)}
       const r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ q: text }) });
       await new Promise(r => setTimeout(r, 300));
       if (!r.found) bot.classList.add('none');
-      bot.innerHTML = esc(r.answer) + (r.matches || []).map(m => `
-        <div class="pcard">
-          <div class="av">${esc(initials(m.name))}</div>
-          <div class="pinfo">
-            <b>${esc(m.name)}</b>
-            <span>${esc([m.gender ? (m.gender === 'femme' ? 'Femme' : 'Homme') : '', m.field].filter(Boolean).join(' · '))}</span>
-            ${m.offer ? `<span class="line"><i>Propose :</i> ${esc(m.offer)}</span>` : ''}
-            <div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>
-            <div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>
-          </div>
-        </div>`).join('') + srcHtml(r.sources);
+      bot.innerHTML = esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 6px">${esc(m.field || '')}</p>${m.offer ? `<p><i>Propose :</i> ${esc(m.offer)}</p>` : ''}<div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
   });
+
+  /* ---------- demandes de contact ---------- */
+  async function loadReq() {
+    const box = $('#rq-list'); box.innerHTML = '<p class="muted">Chargement…</p>';
+    try {
+      const d = await api('/api/requests');
+      box.innerHTML = (d.requests || []).length ? d.requests.map(r => `<div class="bl-card"><h3>${esc(r.from_name || 'Un étudiant')}</h3><small>${r.status === 'pending' ? 'Souhaite avoir ton numéro pour te contacter.' : r.status === 'accepted' ? 'Demande acceptée : cette personne voit ton numéro.' : 'Demande refusée.'}</small>${r.status === 'pending' ? `<div class="bl-act"><button type="button" class="btn primary" data-id="${esc(r.id)}" data-ans="accepted">Accepter</button><button type="button" class="btn" data-id="${esc(r.id)}" data-ans="declined">Refuser</button></div>` : (r.status === 'accepted' ? `<div class="bl-act"><button type="button" class="btn" data-id="${esc(r.id)}" data-ans="declined">Retirer l’accès</button></div>` : '')}</div>`).join('') : '<p class="muted">Aucune demande de contact pour le moment.</p>';
+    } catch (e) { box.innerHTML = '<p class="err">Impossible de charger les demandes.</p>'; }
+  }
+  $('#rq-list').addEventListener('click', async e => { const b = e.target.closest('[data-ans]'); if (!b) return; b.disabled = true; try { await api('/api/requests', { method: 'POST', body: JSON.stringify({ id: b.dataset.id, status: b.dataset.ans }) }); loadReq(); } catch (er) { toast('Action impossible'); b.disabled = false; } });
+  $('#rq-back').addEventListener('click', () => go('chat'));
 
   /* ---------- blogs ---------- */
   let blTab = 'posts', blImgs = [], blEdit = null, blData = [];
@@ -709,7 +740,7 @@ button.me:hover{background:var(--soft)}
     if (!s.length) return '<span class="src">Source : aucune donnée NeXt ne correspond à cette recherche.</span>';
     return '<span class="src">Sources : ' + s.map(x => x.post ? `<a href="#" class="srclink" data-q="${esc(x.q)}">${esc(x.label)}</a>` : esc(x.label)).join(' · ') + '</span>';
   }
-  thread.addEventListener('click', e => { const a = e.target.closest('.srclink'); if (!a) return; e.preventDefault(); $('#bl-q').value = a.dataset.q || ''; blTab = 'posts'; go('blog'); });
+  thread.addEventListener('click', e => { const ar = e.target.closest('[data-ask]'); if (ar) { ar.disabled = true; api('/api/contact-request', { method: 'POST', body: JSON.stringify({ to_user: ar.dataset.ask }) }).then(() => { ar.textContent = 'Demande envoyée'; }).catch(() => { ar.disabled = false; toast('Envoi impossible'); }); return; } const im = e.target.closest('img[data-src]'); if (im) { $('#viewer-body').innerHTML = `<img src="${esc(im.dataset.src)}" alt="">`; viewer.hidden = false; viewer.scrollTop = 0; return; } const a = e.target.closest('.srclink'); if (!a) return; e.preventDefault(); $('#bl-q').value = a.dataset.q || ''; blTab = 'posts'; go('blog'); });
   function shrink(file) {
     return new Promise(ok => {
       const r = new FileReader();
@@ -725,7 +756,7 @@ button.me:hover{background:var(--soft)}
       box.innerHTML = items.length ? `<div class="bl-grid">${items.map(i => `<figure><img src="${esc(i.src)}" alt="${esc(i.p.title)}" data-src="${esc(i.src)}"><figcaption>Source : ${esc(i.p.author)} — ${esc(i.p.title)}</figcaption></figure>`).join('')}</div>` : '<p class="muted">Aucune image trouvée.</p>';
       return;
     }
-    box.innerHTML = blData.map((p, i) => `<article class="bl-card"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p>${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</small>${p.mine ? `<div class="bl-act"><button type="button" class="btn" data-act="edit" data-i="${i}">Modifier</button><button type="button" class="btn" data-act="del" data-i="${i}">Supprimer</button></div>` : ''}</article>`).join('');
+    box.innerHTML = blData.map((p, i) => `<article class="bl-card"><span class="tag">${esc(p.kind)}</span>${p.is_public === false ? ' <span class="tag">Privé</span>' : ''}<h3>${esc(p.title)}</h3><p>${esc(p.body)}</p>${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</small>${p.mine ? `<div class="bl-act"><button type="button" class="btn" data-act="edit" data-i="${i}">Modifier</button><button type="button" class="btn" data-act="del" data-i="${i}">Supprimer</button></div>` : ''}</article>`).join('');
   }
   async function loadBlog() {
     $('#bl-list').innerHTML = '<p class="muted">Chargement…</p>';
@@ -734,9 +765,9 @@ button.me:hover{background:var(--soft)}
   }
   function initBlog() { document.querySelectorAll('#bl-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === blTab)); loadBlog(); }
   function blPrev() { $('#bl-prev').innerHTML = blImgs.map((s, i) => `<img src="${esc(s)}" data-i="${i}" alt="Photo ${i + 1}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin:0 6px 6px 0">`).join('') + (blImgs.length ? '<p class="muted" style="font-size:12px;margin:0">Touche une photo pour la retirer.</p>' : ''); }
-  function blOpen(p) { blEdit = p || null; blImgs = p ? (p.images || []).slice() : []; $('#bl-st').textContent = p ? 'Modifier l’article' : 'Nouvel article'; $('#bl-kind').value = p ? p.kind : 'produit'; $('#bl-title').value = p ? p.title : ''; $('#bl-body').value = p ? p.body : ''; $('#bl-err').textContent = ''; blPrev(); blOv.hidden = false; }
+  function blOpen(p) { blEdit = p || null; blImgs = p ? (p.images || []).slice() : []; $('#bl-st').textContent = p ? 'Modifier l’article' : 'Nouvel article'; $('#bl-kind').value = p ? p.kind : 'produit'; $('#bl-vis').value = p && p.is_public === false ? '0' : '1'; $('#bl-title').value = p ? p.title : ''; $('#bl-body').value = p ? p.body : ''; $('#bl-err').textContent = ''; blPrev(); blOv.hidden = false; }
   $('#bl-search').addEventListener('submit', e => { e.preventDefault(); loadBlog(); });
-  $('#bl-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; blTab = b.dataset.t; initBlog(); });
+  $('#bl-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.t === 'chat') { go('chat'); return; } blTab = b.dataset.t; initBlog(); });
   $('#bl-list').addEventListener('click', async e => {
     const im = e.target.closest('img[data-src]');
     if (im) { $('#viewer-body').innerHTML = `<img src="${esc(im.dataset.src)}" alt="">`; viewer.hidden = false; viewer.scrollTop = 0; return; }
@@ -750,7 +781,7 @@ button.me:hover{background:var(--soft)}
   $('#bl-x').addEventListener('click', () => blOv.hidden = true);
   $('#bl-f').addEventListener('submit', async e => {
     e.preventDefault(); const b = e.target.querySelector('button[type=submit]'); b.disabled = true; $('#bl-err').textContent = '';
-    try { await api('/api/posts', { method: 'POST', body: JSON.stringify({ id: blEdit ? blEdit.id : undefined, kind: $('#bl-kind').value, title: $('#bl-title').value.trim(), body: $('#bl-body').value.trim(), images: blImgs }) }); blOv.hidden = true; toast('Article publié'); blTab = 'mine'; initBlog(); }
+    try { await api('/api/posts', { method: 'POST', body: JSON.stringify({ id: blEdit ? blEdit.id : undefined, kind: $('#bl-kind').value, is_public: $('#bl-vis').value === '1', title: $('#bl-title').value.trim(), body: $('#bl-body').value.trim(), images: blImgs }) }); blOv.hidden = true; toast('Article publié'); blTab = 'mine'; initBlog(); }
     catch (er) { $('#bl-err').textContent = 'Publication impossible. Réessaie.'; }
     b.disabled = false;
   });
