@@ -244,6 +244,9 @@ html.kb,html.kb body{overflow:hidden}
 #info-pop{position:fixed;left:16px;right:16px;bottom:24px;max-width:520px;margin:0 auto;background:#232427;border:1px solid var(--line);border-radius:18px;padding:16px;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.6)}
 #info-pop[hidden]{display:none}#info-pop p{margin:0;font-size:14.5px;color:var(--ink)}
 #info-pop button{margin-top:12px;border:0;border-radius:10px;padding:8px 16px;background:var(--c);color:#fff}
+.dot-wrap{position:relative}
+.dot{width:28px;height:28px;border-radius:50%;background:var(--c);border:2px solid rgba(255,255,255,.75);padding:0;cursor:pointer}
+#theme-dots{position:absolute;right:0;top:38px;background:#232427;border:1px solid var(--line);border-radius:999px;padding:8px 12px;z-index:30}
 </style>
 <script>window.__API_BASE__ = '';</script>
 <script>try{var t=localStorage.getItem('nx_theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -254,7 +257,7 @@ html.kb,html.kb body{overflow:hidden}
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
   <button class="logo" data-go="chat" data-new="1" aria-label="NeXt, accueil">Ne<span>X</span>t</button>
-  <span class="top-spacer"></span>
+  <div class="dot-wrap"><button type="button" class="dot" id="dot" aria-label="Changer la couleur"></button><div id="theme-dots" hidden><button type="button" data-theme="orange" style="background:#D2560C" aria-label="Orange"></button><button type="button" data-theme="bleu" style="background:#2a3d9a" aria-label="Bleu"></button><button type="button" data-theme="vert" style="background:#1c7a4a" aria-label="Vert"></button><button type="button" data-theme="violet" style="background:#6b3fc4" aria-label="Violet"></button><button type="button" data-theme="rose" style="background:#c4366b" aria-label="Rose"></button></div></div>
 </header>
 
 <!-- MENU LATÉRAL -->
@@ -277,13 +280,16 @@ html.kb,html.kb body{overflow:hidden}
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
       Demandes de contact
     </button>
+    <button class="side-item" data-go="fb">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+      Feedback
+    </button>
     <button class="side-item" data-go="founder">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Page d'auteur
     </button>
   </nav>
   <div class="rec" id="rec"><div class="rec-t">Récents <button type="button" class="info" data-info="recents" aria-label="Information">i</button></div><div id="rec-list"></div></div>
-  <div class="themes"><div class="rec-t">Couleur <button type="button" class="info" data-info="theme" aria-label="Information">i</button></div><div id="theme-dots"><button type="button" data-theme="orange" style="background:#D2560C" aria-label="Orange"></button><button type="button" data-theme="bleu" style="background:#2a3d9a" aria-label="Bleu"></button><button type="button" data-theme="vert" style="background:#1c7a4a" aria-label="Vert"></button><button type="button" data-theme="violet" style="background:#6b3fc4" aria-label="Violet"></button><button type="button" data-theme="rose" style="background:#c4366b" aria-label="Rose"></button></div></div>
   <div class="side-foot" id="side-foot"></div>
 </aside>
 
@@ -365,6 +371,19 @@ html.kb,html.kb body{overflow:hidden}
     <div class="exams">
       <div class="exams-head"><h2>Demandes de contact <button type="button" class="info" data-info="req" aria-label="Information">i</button></h2><button class="btn" id="rq-back" type="button">← Discussion</button></div>
       <div id="rq-list"></div>
+    </div>
+  </section>
+  <section id="view-fb" class="view">
+    <div class="exams">
+      <div class="exams-head"><h2>Feedback</h2><button class="btn" id="fb-back" type="button">← Discussion</button></div>
+      <p class="muted" style="margin:0 0 12px">Ton avis nous aide à améliorer NeXt : une idée, un problème, un compliment.</p>
+      <form class="stack" id="fb-f">
+        <label>Type<select id="fb-kind"><option value="idée">Idée</option><option value="problème">Problème</option><option value="compliment">Compliment</option></select></label>
+        <label>Ton message<textarea id="fb-msg" rows="5" maxlength="1500" required></textarea></label>
+        <button class="btn primary" type="submit">Envoyer</button>
+        <p class="err" id="fb-err"></p>
+      </form>
+      <div id="fb-admin" hidden><h3 style="font-family:var(--display);margin:22px 0 10px">Feedbacks reçus</h3><div id="fb-list"></div></div>
     </div>
   </section>
 </main>
@@ -633,6 +652,19 @@ html.kb,html.kb body{overflow:hidden}
       var srcs = scored.map(function (x) { return { label: 'Fiche de ' + x.p.name }; }).concat(pm.map(function (y) { return { label: 'Article « ' + y.x.title + ' » — blog de ' + y.x.author, post: y.x.id, q: y.x.title, k: y.x.kind }; }));
       return res({ found: true, answer: 'J’ai trouvé ' + what + ' pour « ' + q60 + ' ». ' + (np ? 'Voici les fiches, avec la raison pour laquelle elles ressortent.' : 'Voici ce que j’ai trouvé.'), matches: scored.map(function (x) { return x.p; }), posts: pm.map(function (y) { return { id: y.x.id, kind: y.x.kind, title: y.x.title, body: String(y.x.body || '').slice(0, 160), images: (y.x.images || []).slice(0, 3), author: y.x.author }; }), sources: srcs });
     }
+    if (path === '/api/feedback') {
+      var uf = sess().user.id;
+      if (m === 'POST') {
+        if (!body.message) return fail('Écris un message.');
+        var nf = await db('students?user_id=eq.' + uf + '&select=full_name');
+        await db('feedback', { method: 'POST', body: JSON.stringify({ kind: body.kind || 'idée', message: String(body.message).slice(0, 1500), author: (nf && nf[0] && nf[0].full_name) || String(sess().user.email || 'Membre').split('@')[0] }) });
+        return res({ ok: true });
+      }
+      var ad = await db('admins?user_id=eq.' + uf + '&select=user_id');
+      if (!ad || !ad[0]) return res({ admin: false, items: [] });
+      if (m === 'DELETE') { await db('feedback?id=eq.' + encodeURIComponent(u.searchParams.get('id')), { method: 'DELETE' }); return res({ ok: true }); }
+      return res({ admin: true, items: await db('feedback?select=*&order=created_at.desc&limit=100') });
+    }
     if (path === '/api/vision' && m === 'POST') {
       var vr = await real('/api/vision', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess().access_token }, body: opts.body });
       var vd = await vr.json().catch(function () { return {}; });
@@ -739,6 +771,7 @@ html.kb,html.kb body{overflow:hidden}
     if (v === 'exams') initExams();
     if (v === 'blog') initBlog();
     if (v === 'req') loadReq();
+    if (v === 'fb') loadFb();
   }
   document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.new) resetChat(); go(b.dataset.go); closeSide(); }));
 
@@ -837,7 +870,9 @@ html.kb,html.kb body{overflow:hidden}
 
   /* ---------- couleur ---------- */
   function markTheme() { const t = document.documentElement.dataset.theme || 'orange'; document.querySelectorAll('#theme-dots button').forEach(b => b.classList.toggle('on', b.dataset.theme === t)); }
-  $('#theme-dots').addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (!b) return; document.documentElement.dataset.theme = b.dataset.theme; try { localStorage.setItem('nx_theme', b.dataset.theme); } catch (er) {} markTheme(); });
+  $('#theme-dots').addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (!b) return; document.documentElement.dataset.theme = b.dataset.theme; try { localStorage.setItem('nx_theme', b.dataset.theme); } catch (er) {} document.getElementById('theme-dots').hidden = true; markTheme(); });
+  $('#dot').addEventListener('click', e => { e.stopPropagation(); $('#theme-dots').hidden = !$('#theme-dots').hidden; });
+  document.addEventListener('click', e => { if (!e.target.closest('.dot-wrap')) $('#theme-dots').hidden = true; });
   markTheme();
 
   /* ---------- infos ---------- */
@@ -881,6 +916,24 @@ html.kb,html.kb body{overflow:hidden}
     renderRecents();
   });
   renderRecents();
+
+  /* ---------- feedback ---------- */
+  async function loadFb() {
+    $('#fb-admin').hidden = true;
+    try {
+      const d = await api('/api/feedback'); if (!d.admin) return;
+      $('#fb-admin').hidden = false;
+      $('#fb-list').innerHTML = d.items.length ? d.items.map(f => `<div class="bl-card"><span class="tag">${esc(f.kind)}</span><p>${esc(f.message)}</p><small>${esc(f.author || 'Membre')} · ${new Date(f.created_at).toLocaleString('fr-FR')}</small><div class="bl-act"><button type="button" class="btn" data-fbdel="${esc(f.id)}">Supprimer</button></div></div>`).join('') : '<p class="muted">Aucun feedback pour le moment.</p>';
+    } catch (e) {}
+  }
+  $('#fb-f').addEventListener('submit', async e => {
+    e.preventDefault(); const b = e.target.querySelector('button[type=submit]'); b.disabled = true; $('#fb-err').textContent = '';
+    try { await api('/api/feedback', { method: 'POST', body: JSON.stringify({ kind: $('#fb-kind').value, message: $('#fb-msg').value.trim() }) }); $('#fb-msg').value = ''; toast('Merci pour ton feedback !'); loadFb(); }
+    catch (er) { $('#fb-err').textContent = 'Envoi impossible. Réessaie.'; }
+    b.disabled = false;
+  });
+  $('#fb-list').addEventListener('click', async e => { const b = e.target.closest('[data-fbdel]'); if (!b || !confirm('Supprimer ce feedback ?')) return; try { await api('/api/feedback?id=' + b.dataset.fbdel, { method: 'DELETE' }); loadFb(); } catch (er) { toast('Suppression impossible'); } });
+  $('#fb-back').addEventListener('click', () => go('chat'));
 
   /* ---------- demandes de contact ---------- */
   async function loadReq() {
