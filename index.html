@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#000000">
 <title>NeXt</title>
 <style>
 [hidden]{display:none!important}
@@ -206,8 +207,42 @@ button.me:hover{background:var(--soft)}
 .rec-n{flex:1;min-width:0;border:0;background:none;text-align:left;padding:8px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:var(--ink)}
 .rec-m{border:0;background:none;padding:4px 10px;color:var(--ink-3);font-size:18px}
 .rec-a{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 8px}.rec-a button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 8px;font-size:12.5px}
+:root{color-scheme:dark;--bg:#000;--surface:#1e1f21;--soft:#2b2c30;--line:#34363b;--ink:#e8eaed;--ink-2:#b6bac1;--ink-3:#8b9099;--err:#ff8a80}
+html{background:#000}
+body{background:linear-gradient(180deg,#000 0%,#000 42%,var(--g1) 66%,var(--g2) 86%,var(--g3) 100%)}
+.top{position:sticky;top:0;z-index:6;background:transparent}
+html.kb,html.kb body{overflow:hidden}
+.bar{position:relative;background:#1e1f21;border-color:transparent;box-shadow:none;border-radius:32px}
+.send{background:var(--c);color:#fff}.send:disabled{background:#2a2c33;color:#6b7078}
+.btn.primary{background:var(--c);border-color:var(--c);color:#fff}
+.chip.on{background:var(--c);border-color:var(--c);color:#fff}
+.call{background:var(--c);color:#fff}.wa{background:#12301f;color:#7ee2a0}
+.stack input,.stack textarea,.stack select{background:#141416;color:var(--ink)}
+.overlay{background:rgba(0,0,0,.6)}.side-shade{background:rgba(0,0,0,.55)}
+.sheet,.side{box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.toast{background:#2b2c30;color:#fff}
+.dup,.demo{background:#2a1c10;color:#f2b987}
+.avatar{background:var(--c)}.segb.active{box-shadow:none}.viewer-body img{background:#111}
+.plus-menu{position:absolute;left:0;bottom:calc(100% + 10px);background:#232427;border:1px solid var(--line);border-radius:18px;padding:6px;display:flex;flex-direction:column;min-width:190px;box-shadow:0 12px 30px rgba(0,0,0,.5);z-index:5}
+.plus-menu[hidden]{display:none}
+.plus-menu button{border:0;background:none;text-align:left;padding:12px 14px;border-radius:12px;font-size:15px;color:var(--ink)}
+.plus-menu button:hover{background:var(--soft)}
+#att{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}#att[hidden]{display:none}
+.att{position:relative;background:var(--soft);border-radius:12px;padding:6px 28px 6px 8px;font-size:13px;display:flex;align-items:center;gap:6px;max-width:100%}
+.att img{width:36px;height:36px;object-fit:cover;border-radius:8px}
+.att button{position:absolute;top:2px;right:4px;border:0;background:none;color:var(--ink-2);font-size:16px}
+:root{--c:#D2560C;--g1:#120703;--g2:#3a1604;--g3:#6b2a08;--accent:var(--c)}
+:root[data-theme=bleu]{--c:#2a3d9a;--g1:#050818;--g2:#0d1438;--g3:#18235f}
+:root[data-theme=vert]{--c:#1c7a4a;--g1:#03120a;--g2:#07301a;--g3:#0e5a30}
+:root[data-theme=violet]{--c:#6b3fc4;--g1:#0b0618;--g2:#1c0e3d;--g3:#341a73}
+:root[data-theme=rose]{--c:#c4366b;--g1:#14040b;--g2:#3d0c20;--g3:#74173f}
+.themes{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+#theme-dots{display:flex;gap:10px;padding:2px 10px 6px}
+#theme-dots button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;padding:0}
+#theme-dots button.on{border-color:#fff}
 </style>
 <script>window.__API_BASE__ = '';</script>
+<script>try{var t=localStorage.getItem('nx_theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
 <header class="top">
@@ -244,6 +279,7 @@ button.me:hover{background:var(--soft)}
     </button>
   </nav>
   <div class="rec" id="rec"><div class="rec-t">Récents</div><div id="rec-list"></div></div>
+  <div class="themes"><div class="rec-t">Couleur</div><div id="theme-dots"><button type="button" data-theme="orange" style="background:#D2560C" aria-label="Orange"></button><button type="button" data-theme="bleu" style="background:#2a3d9a" aria-label="Bleu"></button><button type="button" data-theme="vert" style="background:#1c7a4a" aria-label="Vert"></button><button type="button" data-theme="violet" style="background:#6b3fc4" aria-label="Violet"></button><button type="button" data-theme="rose" style="background:#c4366b" aria-label="Rose"></button></div></div>
   <div class="side-foot" id="side-foot"></div>
 </aside>
 
@@ -254,7 +290,11 @@ button.me:hover{background:var(--soft)}
     <div id="hero" class="hero">
       <h1>Ne<span style="color:var(--accent)">X</span>t</h1>
     </div>
+    <div id="att" hidden></div>
     <form id="ask" class="bar">
+      <button type="button" class="pin" id="plus" aria-label="Ajouter une photo ou un fichier"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="plus-menu" id="plus-menu" hidden><button type="button" data-pick="photo">Photos</button><button type="button" data-pick="cam">Appareil photo</button><button type="button" data-pick="file">Fichier</button></div>
+      <input id="in-photo" type="file" accept="image/*" multiple hidden><input id="in-cam" type="file" accept="image/*" capture="environment" hidden><input id="in-file" type="file" hidden>
       <textarea id="q" rows="1" placeholder="Demande à NeXt" aria-label="Ta question"></textarea>
       <button type="submit" class="send" id="send" aria-label="Envoyer" disabled>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -469,8 +509,8 @@ button.me:hover{background:var(--soft)}
   }
   function showAuth() {
     var mode = 'in', box = document.createElement('div');
-    var fld = 'border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;font-size:16px';
-    box.style.cssText = 'position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
+    var fld = 'border:1px solid var(--line);border-radius:12px;padding:12px;background:#141416;color:var(--ink);font-size:16px';
+    box.style.cssText = 'position:fixed;inset:0;z-index:99;background:linear-gradient(180deg,#000 0%,#000 42%,var(--g1) 66%,var(--g2) 86%,var(--g3) 100%);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
     box.innerHTML = '<form id="au-f" style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px"><h2 style="font-family:var(--display);font-size:30px;margin:0">Bienvenue sur NeXt</h2><p style="margin:0;color:var(--ink-2)">Connecte-toi pour découvrir plein de choses.</p><input id="au-e" type="email" placeholder="Adresse e-mail" autocomplete="email" required style="' + fld + '"><input id="au-p" type="password" placeholder="Mot de passe (6 caractères minimum)" autocomplete="current-password" required minlength="6" style="' + fld + '"><button class="btn primary" id="au-b" type="submit">Se connecter</button><button type="button" id="au-sw" style="border:0;background:none;color:var(--accent);font-weight:600;padding:8px">Pas de compte ? Créer un compte</button><p id="au-err" style="color:var(--err);margin:0;min-height:1.2em;font-size:14px"></p></form>';
     document.body.appendChild(box);
     var q = function (i) { return box.querySelector(i); };
@@ -706,20 +746,20 @@ button.me:hover{background:var(--soft)}
 
   /* ---------- chat ---------- */
   const view = $('#view-chat'), thread = $('#thread'), q = $('#q'), send = $('#send');
-  let curConv = null;
+  let curConv = null, atts = [];
   function resetChat() { curConv = null; thread.innerHTML = ''; view.classList.remove('started'); q.value = ''; grow(); }
-  function grow() { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 180) + 'px'; send.disabled = !q.value.trim(); }
+  function grow() { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 180) + 'px'; send.disabled = !q.value.trim() && !atts.length; }
   q.addEventListener('input', grow);
   q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ask').requestSubmit(); } });
   const telHref = p => 'tel:' + String(p).replace(/[^\d+]/g, '');
   const waHref = p => { let d = String(p).replace(/\D/g, ''); if (d.length === 8) d = '227' + d; return 'https://wa.me/' + d; };
   $('#ask').addEventListener('submit', async e => {
     e.preventDefault();
-    const text = q.value.trim(); if (!text) return;
+    const hadAtt = atts.slice(), text = q.value.trim() || (hadAtt.length ? 'Pièce jointe' : ''); if (!text) return;
     view.classList.add('started');
-    thread.insertAdjacentHTML('beforeend', `<div class="m-user">${esc(text)}</div>`);
+    thread.insertAdjacentHTML('beforeend', `<div class="m-user">${esc(text)}${hadAtt.map(a => a.img ? `<img src="${esc(a.img)}" alt="" style="display:block;max-width:160px;border-radius:10px;margin-top:6px">` : `<span style="display:block;margin-top:6px;font-size:13px">📎 ${esc(a.name)}</span>`).join('')}</div>`);
     const bot = document.createElement('div'); bot.className = 'm-bot'; bot.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
-    thread.appendChild(bot); q.value = ''; grow(); thread.scrollTop = thread.scrollHeight;
+    thread.appendChild(bot); atts = []; attBox.hidden = true; attBox.innerHTML = ''; q.value = ''; grow(); thread.scrollTop = thread.scrollHeight;
     try {
       const r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ q: text }) });
       await new Promise(r => setTimeout(r, 300));
@@ -727,8 +767,29 @@ button.me:hover{background:var(--soft)}
       bot.innerHTML = esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 6px">${esc(m.field || '')}</p>${m.offer ? `<p><i>Propose :</i> ${esc(m.offer)}</p>` : ''}<div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
+    if (hadAtt.length) bot.insertAdjacentHTML('beforeend', '<span class="src">Les pièces jointes ne sont pas encore analysées par NeXt : la réponse se base sur ton texte.</span>');
     saveConv(text);
   });
+
+  /* ---------- pièces jointes + clavier ---------- */
+  const attBox = $('#att'), plusMenu = $('#plus-menu');
+  function renderAtt() { attBox.hidden = !atts.length; attBox.innerHTML = atts.map((a, i) => `<span class="att">${a.img ? `<img src="${esc(a.img)}" alt="">` : ''}<span>${esc(a.name)}</span><button type="button" data-rm="${i}" aria-label="Retirer">×</button></span>`).join(''); grow(); }
+  $('#plus').addEventListener('click', e => { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; });
+  document.addEventListener('click', e => { if (!e.target.closest('#plus-menu')) plusMenu.hidden = true; });
+  plusMenu.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (!b) return; plusMenu.hidden = true; $('#in-' + b.dataset.pick).click(); });
+  ['photo', 'cam', 'file'].forEach(k => $('#in-' + k).addEventListener('change', async e => {
+    for (const f of [...e.target.files]) { if (atts.length >= 3) break; atts.push({ name: f.name || 'Photo', img: f.type.indexOf('image/') === 0 ? await shrink(f, 400) : '' }); }
+    e.target.value = ''; renderAtt();
+  }));
+  attBox.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; atts.splice(+b.dataset.rm, 1); renderAtt(); });
+  q.addEventListener('focus', () => { document.documentElement.classList.add('kb'); setTimeout(() => window.scrollTo(0, 0), 50); });
+  q.addEventListener('blur', () => document.documentElement.classList.remove('kb'));
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (document.documentElement.classList.contains('kb')) window.scrollTo(0, 0); });
+
+  /* ---------- couleur ---------- */
+  function markTheme() { const t = document.documentElement.dataset.theme || 'orange'; document.querySelectorAll('#theme-dots button').forEach(b => b.classList.toggle('on', b.dataset.theme === t)); }
+  $('#theme-dots').addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (!b) return; document.documentElement.dataset.theme = b.dataset.theme; try { localStorage.setItem('nx_theme', b.dataset.theme); } catch (er) {} markTheme(); });
+  markTheme();
 
   /* ---------- récents ---------- */
   const convKey = () => { try { return 'nx_convs_' + JSON.parse(localStorage.getItem('nx_sess')).user.id; } catch (e) { return 'nx_convs'; } };
@@ -776,10 +837,10 @@ button.me:hover{background:var(--soft)}
     return '<span class="src">Sources : ' + s.map(x => x.post ? `<a href="#" class="srclink" data-q="${esc(x.q)}" data-k="${esc(x.k)}">${esc(x.label)}</a>` : esc(x.label)).join(' · ') + '</span>';
   }
   thread.addEventListener('click', e => { const ar = e.target.closest('[data-ask]'); if (ar) { ar.disabled = true; api('/api/contact-request', { method: 'POST', body: JSON.stringify({ to_user: ar.dataset.ask }) }).then(() => { ar.textContent = 'Demande envoyée'; }).catch(() => { ar.disabled = false; toast('Envoi impossible'); }); return; } const im = e.target.closest('img[data-src]'); if (im) { $('#viewer-body').innerHTML = `<img src="${esc(im.dataset.src)}" alt="">`; viewer.hidden = false; viewer.scrollTop = 0; return; } const a = e.target.closest('.srclink'); if (!a) return; e.preventDefault(); blPre = a.dataset.q || ''; blTab = a.dataset.k === 'épreuve' ? 'exam' : 'posts'; go('blog'); });
-  function shrink(file) {
+  function shrink(file, max) {
     return new Promise(ok => {
       const r = new FileReader();
-      r.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, 1000 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = im.width * k; c.height = im.height * k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', .72)); }; im.onerror = () => ok(null); im.src = r.result; };
+      r.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, (max || 1000) / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = im.width * k; c.height = im.height * k; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL('image/jpeg', .72)); }; im.onerror = () => ok(null); im.src = r.result; };
       r.readAsDataURL(file);
     });
   }
