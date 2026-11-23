@@ -200,6 +200,12 @@ button.me:hover{background:var(--soft)}
 .bl-act{display:flex;gap:8px;margin-top:10px}
 .bl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bl-grid figure{margin:0}.bl-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;cursor:pointer}
 .bl-grid figcaption{font-size:12px;color:var(--ink-3);margin-top:4px}
+.rec{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;overflow-y:auto;flex:1;min-height:0}
+.rec-t{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:0 10px 6px}
+.rec-i{display:flex;align-items:center;gap:2px;border-radius:10px}.rec-i:hover{background:var(--soft)}
+.rec-n{flex:1;min-width:0;border:0;background:none;text-align:left;padding:8px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:var(--ink)}
+.rec-m{border:0;background:none;padding:4px 10px;color:var(--ink-3);font-size:18px}
+.rec-a{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 8px}.rec-a button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 8px;font-size:12.5px}
 </style>
 <script>window.__API_BASE__ = '';</script>
 </head>
@@ -237,6 +243,7 @@ button.me:hover{background:var(--soft)}
       Page d'auteur
     </button>
   </nav>
+  <div class="rec" id="rec"><div class="rec-t">Récents</div><div id="rec-list"></div></div>
   <div class="side-foot" id="side-foot"></div>
 </aside>
 
@@ -306,7 +313,7 @@ button.me:hover{background:var(--soft)}
     <div class="exams">
       <div class="exams-head"><h2>Blogs</h2><button class="btn primary" id="bl-new">+ Écrire</button></div>
       <form id="bl-search" class="stack search-box"><input id="bl-q" placeholder="Rechercher un produit, une épreuve, un auteur…" autocomplete="off"></form>
-      <div id="bl-tabs" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap"><button type="button" class="navlink" data-t="chat">← Discussion</button><button type="button" class="navlink on" data-t="posts">Articles</button><button type="button" class="navlink" data-t="images">Images</button><button type="button" class="navlink" data-t="mine">Mon blog</button></div>
+      <div id="bl-tabs" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap"><button type="button" class="navlink" data-t="chat">← Discussion</button><button type="button" class="navlink on" data-t="all">Tous</button><button type="button" class="navlink" data-t="posts">Articles</button><button type="button" class="navlink" data-t="exam">Épreuves</button><button type="button" class="navlink" data-t="mine">Mon blog</button></div>
       <div id="bl-list"></div>
     </div>
   </section>
@@ -699,7 +706,8 @@ button.me:hover{background:var(--soft)}
 
   /* ---------- chat ---------- */
   const view = $('#view-chat'), thread = $('#thread'), q = $('#q'), send = $('#send');
-  function resetChat() { thread.innerHTML = ''; view.classList.remove('started'); q.value = ''; grow(); }
+  let curConv = null;
+  function resetChat() { curConv = null; thread.innerHTML = ''; view.classList.remove('started'); q.value = ''; grow(); }
   function grow() { q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 180) + 'px'; send.disabled = !q.value.trim(); }
   q.addEventListener('input', grow);
   q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#ask').requestSubmit(); } });
@@ -719,7 +727,34 @@ button.me:hover{background:var(--soft)}
       bot.innerHTML = esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 6px">${esc(m.field || '')}</p>${m.offer ? `<p><i>Propose :</i> ${esc(m.offer)}</p>` : ''}<div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
+    saveConv(text);
   });
+
+  /* ---------- récents ---------- */
+  const convKey = () => { try { return 'nx_convs_' + JSON.parse(localStorage.getItem('nx_sess')).user.id; } catch (e) { return 'nx_convs'; } };
+  const loadConvs = () => { try { return JSON.parse(localStorage.getItem(convKey()) || '[]'); } catch (e) { return []; } };
+  const storeConvs = a => { try { localStorage.setItem(convKey(), JSON.stringify(a.slice(0, 40))); } catch (e) {} };
+  let openMenu = null;
+  function renderRecents() {
+    const a = loadConvs().sort((x, y) => (Number(!!y.pinned) - Number(!!x.pinned)) || (y.ts - x.ts));
+    $('#rec-list').innerHTML = a.length ? a.map(c => `<div class="rec-i"><button type="button" class="rec-n" data-open="${esc(c.id)}">${c.pinned ? '📌 ' : ''}${esc(c.title)}</button><button type="button" class="rec-m" data-menu="${esc(c.id)}" aria-label="Options">⋯</button></div>${openMenu === c.id ? `<div class="rec-a"><button type="button" data-pin="${esc(c.id)}">${c.pinned ? 'Désépingler' : 'Épingler'}</button><button type="button" data-ren="${esc(c.id)}">Renommer</button><button type="button" data-del="${esc(c.id)}">Supprimer</button></div>` : ''}`).join('') : '<p class="muted" style="padding:0 10px;font-size:13px">Aucune discussion pour le moment.</p>';
+  }
+  function saveConv(title) {
+    const a = loadConvs(); let c = a.find(x => x.id === curConv);
+    if (!c) { c = { id: 'c' + Date.now(), title: title.slice(0, 60), pinned: false }; a.unshift(c); curConv = c.id; }
+    c.html = thread.innerHTML; c.ts = Date.now(); storeConvs(a); renderRecents();
+  }
+  $('#rec-list').addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t) return;
+    const a = loadConvs(), id = t.dataset.open || t.dataset.menu || t.dataset.pin || t.dataset.ren || t.dataset.del, c = a.find(x => x.id === id); if (!c) return;
+    if (t.dataset.open) { thread.innerHTML = c.html; view.classList.add('started'); curConv = c.id; openMenu = null; renderRecents(); go('chat'); closeSide(); thread.scrollTop = thread.scrollHeight; return; }
+    if (t.dataset.menu) { openMenu = openMenu === id ? null : id; }
+    else if (t.dataset.pin) { c.pinned = !c.pinned; storeConvs(a); openMenu = null; }
+    else if (t.dataset.ren) { const n = prompt('Nouveau nom de la discussion', c.title); if (n && n.trim()) { c.title = n.trim().slice(0, 60); storeConvs(a); } openMenu = null; }
+    else if (t.dataset.del) { if (!confirm('Supprimer cette discussion ?')) return; storeConvs(a.filter(x => x.id !== id)); if (curConv === id) resetChat(); openMenu = null; }
+    renderRecents();
+  });
+  renderRecents();
 
   /* ---------- demandes de contact ---------- */
   async function loadReq() {
@@ -733,14 +768,14 @@ button.me:hover{background:var(--soft)}
   $('#rq-back').addEventListener('click', () => go('chat'));
 
   /* ---------- blogs ---------- */
-  let blTab = 'posts', blImgs = [], blEdit = null, blData = [];
+  let blTab = 'all', blImgs = [], blEdit = null, blData = [];
   const blOv = $('#bl-ov');
   function srcHtml(s) {
     s = s || [];
     if (!s.length) return '<span class="src">Source : aucune donnée NeXt ne correspond à cette recherche.</span>';
     return '<span class="src">Sources : ' + s.map(x => x.post ? `<a href="#" class="srclink" data-q="${esc(x.q)}">${esc(x.label)}</a>` : esc(x.label)).join(' · ') + '</span>';
   }
-  thread.addEventListener('click', e => { const ar = e.target.closest('[data-ask]'); if (ar) { ar.disabled = true; api('/api/contact-request', { method: 'POST', body: JSON.stringify({ to_user: ar.dataset.ask }) }).then(() => { ar.textContent = 'Demande envoyée'; }).catch(() => { ar.disabled = false; toast('Envoi impossible'); }); return; } const im = e.target.closest('img[data-src]'); if (im) { $('#viewer-body').innerHTML = `<img src="${esc(im.dataset.src)}" alt="">`; viewer.hidden = false; viewer.scrollTop = 0; return; } const a = e.target.closest('.srclink'); if (!a) return; e.preventDefault(); $('#bl-q').value = a.dataset.q || ''; blTab = 'posts'; go('blog'); });
+  thread.addEventListener('click', e => { const ar = e.target.closest('[data-ask]'); if (ar) { ar.disabled = true; api('/api/contact-request', { method: 'POST', body: JSON.stringify({ to_user: ar.dataset.ask }) }).then(() => { ar.textContent = 'Demande envoyée'; }).catch(() => { ar.disabled = false; toast('Envoi impossible'); }); return; } const im = e.target.closest('img[data-src]'); if (im) { $('#viewer-body').innerHTML = `<img src="${esc(im.dataset.src)}" alt="">`; viewer.hidden = false; viewer.scrollTop = 0; return; } const a = e.target.closest('.srclink'); if (!a) return; e.preventDefault(); $('#bl-q').value = a.dataset.q || ''; blTab = 'all'; go('blog'); });
   function shrink(file) {
     return new Promise(ok => {
       const r = new FileReader();
@@ -760,7 +795,7 @@ button.me:hover{background:var(--soft)}
   }
   async function loadBlog() {
     $('#bl-list').innerHTML = '<p class="muted">Chargement…</p>';
-    try { const d = await api('/api/posts?q=' + encodeURIComponent($('#bl-q').value.trim()) + (blTab === 'mine' ? '&mine=1' : '')); blData = d.posts || []; blRender(); }
+    try { const d = await api('/api/posts?q=' + encodeURIComponent($('#bl-q').value.trim()) + (blTab === 'mine' ? '&mine=1' : '')); blData = (d.posts || []).filter(p => blTab === 'posts' ? p.kind !== 'épreuve' : (blTab === 'exam' ? p.kind === 'épreuve' : true)); blRender(); }
     catch (e) { $('#bl-list').innerHTML = '<p class="err">Impossible de charger les blogs.</p>'; }
   }
   function initBlog() { document.querySelectorAll('#bl-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === blTab)); loadBlog(); }
