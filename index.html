@@ -240,6 +240,10 @@ html.kb,html.kb body{overflow:hidden}
 #theme-dots{display:flex;gap:10px;padding:2px 10px 6px}
 #theme-dots button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;padding:0}
 #theme-dots button.on{border-color:#fff}
+.info{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--ink-3);background:none;color:var(--ink-3);font-size:12px;font-weight:700;line-height:1;padding:0;margin-left:8px;vertical-align:middle;cursor:pointer;display:inline-grid;place-items:center;text-transform:none;letter-spacing:0}
+#info-pop{position:fixed;left:16px;right:16px;bottom:24px;max-width:520px;margin:0 auto;background:#232427;border:1px solid var(--line);border-radius:18px;padding:16px;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#info-pop[hidden]{display:none}#info-pop p{margin:0;font-size:14.5px;color:var(--ink)}
+#info-pop button{margin-top:12px;border:0;border-radius:10px;padding:8px 16px;background:var(--c);color:#fff}
 </style>
 <script>window.__API_BASE__ = '';</script>
 <script>try{var t=localStorage.getItem('nx_theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -278,8 +282,8 @@ html.kb,html.kb body{overflow:hidden}
       Page d'auteur
     </button>
   </nav>
-  <div class="rec" id="rec"><div class="rec-t">Récents</div><div id="rec-list"></div></div>
-  <div class="themes"><div class="rec-t">Couleur</div><div id="theme-dots"><button type="button" data-theme="orange" style="background:#D2560C" aria-label="Orange"></button><button type="button" data-theme="bleu" style="background:#2a3d9a" aria-label="Bleu"></button><button type="button" data-theme="vert" style="background:#1c7a4a" aria-label="Vert"></button><button type="button" data-theme="violet" style="background:#6b3fc4" aria-label="Violet"></button><button type="button" data-theme="rose" style="background:#c4366b" aria-label="Rose"></button></div></div>
+  <div class="rec" id="rec"><div class="rec-t">Récents <button type="button" class="info" data-info="recents" aria-label="Information">i</button></div><div id="rec-list"></div></div>
+  <div class="themes"><div class="rec-t">Couleur <button type="button" class="info" data-info="theme" aria-label="Information">i</button></div><div id="theme-dots"><button type="button" data-theme="orange" style="background:#D2560C" aria-label="Orange"></button><button type="button" data-theme="bleu" style="background:#2a3d9a" aria-label="Bleu"></button><button type="button" data-theme="vert" style="background:#1c7a4a" aria-label="Vert"></button><button type="button" data-theme="violet" style="background:#6b3fc4" aria-label="Violet"></button><button type="button" data-theme="rose" style="background:#c4366b" aria-label="Rose"></button></div></div>
   <div class="side-foot" id="side-foot"></div>
 </aside>
 
@@ -288,7 +292,7 @@ html.kb,html.kb body{overflow:hidden}
   <section id="view-chat" class="view active">
     <div id="thread" class="thread"></div>
     <div id="hero" class="hero">
-      <h1>Ne<span style="color:var(--accent)">X</span>t</h1>
+      <h1>Ne<span style="color:var(--accent)">X</span>t</h1><button type="button" class="info" data-info="search" aria-label="Information">i</button>
     </div>
     <div id="att" hidden></div>
     <form id="ask" class="bar">
@@ -351,7 +355,7 @@ html.kb,html.kb body{overflow:hidden}
   </section>
   <section id="view-blog" class="view">
     <div class="exams">
-      <div class="exams-head"><h2>Blogs</h2><button class="btn primary" id="bl-new">+ Écrire</button></div>
+      <div class="exams-head"><h2>Blogs <button type="button" class="info" data-info="blog" aria-label="Information">i</button></h2><button class="btn primary" id="bl-new">+ Écrire</button></div>
       <input id="bl-q" type="hidden">
       <div id="bl-tabs" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap"><button type="button" class="navlink" data-t="chat">← Discussion</button><button type="button" class="navlink on" data-t="mine">Mon blog</button><button type="button" class="navlink" data-t="posts">Produit / service</button><button type="button" class="navlink" data-t="exam">Épreuves</button></div>
       <div id="bl-list"></div>
@@ -359,7 +363,7 @@ html.kb,html.kb body{overflow:hidden}
   </section>
   <section id="view-req" class="view">
     <div class="exams">
-      <div class="exams-head"><h2>Demandes de contact</h2><button class="btn" id="rq-back" type="button">← Discussion</button></div>
+      <div class="exams-head"><h2>Demandes de contact <button type="button" class="info" data-info="req" aria-label="Information">i</button></h2><button class="btn" id="rq-back" type="button">← Discussion</button></div>
       <div id="rq-list"></div>
     </div>
   </section>
@@ -401,7 +405,7 @@ html.kb,html.kb body{overflow:hidden}
         <label>Nom<input id="u-last" autocomplete="family-name" required></label>
       </div>
       <label>Numéro de téléphone<input id="u-phone" type="tel" placeholder="+227 90 00 00 00" autocomplete="tel" required></label>
-      <label>Visibilité du numéro<select id="u-phonevis"><option value="0">Privé : visible seulement si j’accepte une demande</option><option value="1">Public : visible par tous les membres</option></select></label>
+      <label>Visibilité du numéro <button type="button" class="info" data-info="phone" aria-label="Information">i</button><select id="u-phonevis"><option value="0">Privé : visible seulement si j’accepte une demande</option><option value="1">Public : visible par tous les membres</option></select></label>
       <label>Sexe
         <select id="u-gender" required>
           <option value="">Choisir</option>
@@ -482,7 +486,42 @@ html.kb,html.kb body{overflow:hidden}
   var real = window.fetch.bind(window);
   function g(k, d) { try { var v = localStorage.getItem('nx_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
   function s(k, v) { try { localStorage.setItem('nx_' + k, JSON.stringify(v)); } catch (e) {} }
-  var norm = function (t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+  var LOC = { 'ɓ': 'b', 'ɗ': 'd', 'ƙ': 'k', 'ƴ': 'y', 'ŋ': 'n', 'ɲ': 'n', 'ɛ': 'e', 'ɔ': 'o' };
+  var norm = function (t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[ɓɗƙƴŋɲɛɔ'’ʼ]/g, function (c) { return LOC[c] || ''; }); };
+  function lev(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    var prev = [], cur, i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) { cur = [i]; for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+    return prev[b.length];
+  }
+  function scoreText(toks, text) {
+    var hw = norm(text).split(/[^\p{L}\p{N}]+/u).filter(Boolean), total = 0;
+    toks.forEach(function (t) {
+      var best = 0, tol = t.length >= 7 ? 2 : 1;
+      hw.forEach(function (w) {
+        var s = 0;
+        if (w === t) s = 3;
+        else if (t.length >= 4 && w.length >= 4 && (w.indexOf(t) === 0 || t.indexOf(w) === 0)) s = 2;
+        else if (t.length >= 4 && lev(t, w, tol) <= tol) s = 1;
+        if (s > best) best = s;
+      });
+      total += best;
+    });
+    return total;
+  }
+  function whyNote(tobj, o) {
+    var f = [['son produit ou service', o.offer], ['ses compétences', o.skills], ['sa filière', o.field], ['son nom', o.name]], found = [];
+    tobj.forEach(function (x) { for (var i = 0; i < f.length; i++) { if (scoreText([x.n], f[i][1]) > 0) { found.push('« ' + x.o + ' » correspond à ' + f[i][0]); break; } } });
+    return found.slice(0, 2).join(' et ');
+  }
+  function personNote(o, why) {
+    var s = o.name + (o.field ? ' est en ' + o.field : ' est membre de NeXt');
+    if (o.offer) s += ' et propose : ' + (o.offer.length > 80 ? o.offer.slice(0, 80) + '…' : o.offer);
+    s += '.';
+    if (why) s += ' Ce profil ressort ici car ' + why + '.';
+    return s;
+  }
   var STOP = ['les','des','une','que','qui','pour','avec','dans','cherche','je','un','le','la','de','du','et','en','au','sur','quelqu','trouver','veux','besoin','partenaire','partenaires','etudiant','etudiants','membre','membres'];
   function res(data, status) { return Promise.resolve(new Response(JSON.stringify(data), { status: status || 200, headers: { 'Content-Type': 'application/json' } })); }
   function fail(msg, status) { return res({ detail: msg }, status || 400); }
@@ -572,25 +611,32 @@ html.kb,html.kb body{overflow:hidden}
       return res(fromRow(Object.assign({}, row, { phone: body.phone, phone_public: !!body.phone_public })));
     }
     if (path === '/api/ask') {
-      var qn = norm(body.q), EX = /^(epreuve|epreuves|examen|examens|sujet|sujets|partiel|partiels|devoir|devoirs|composition|compositions)$/;
-      var words = qn.split(/[^a-z0-9]+/);
-      var asksExam = words.some(function (w) { return EX.test(w); });
-      var toks = words.filter(function (w) { return w.length > 2 && STOP.indexOf(w) < 0 && !EX.test(w); });
-      var score = function (hay) { hay = norm(hay); return toks.filter(function (w) { return hay.indexOf(w) >= 0; }).length; };
+      var rawQ = String(body.q || '').trim(), q60 = rawQ.length > 60 ? rawQ.slice(0, 60) + '…' : rawQ;
+      var EX = /^(epreuve|epreuves|examen|examens|sujet|sujets|partiel|partiels|devoir|devoirs|composition|compositions)$/;
+      var qw = rawQ.split(/[^\p{L}\p{N}'’ʼ]+/u).filter(Boolean).map(function (w) { return { o: w, n: norm(w) }; }).filter(function (x) { return x.n; });
+      var asksExam = qw.some(function (x) { return EX.test(x.n); });
+      var tobj = qw.filter(function (x) { return x.n.length > 1 && STOP.indexOf(x.n) < 0 && !EX.test(x.n); }), toks = tobj.map(function (x) { return x.n; });
       var scored = [];
-      if (!asksExam) {
-        scored = (await db('students?select=*')).map(function (r) { var p = toStudent(r); return { p: { user_id: r.user_id, name: p.name, field: p.field, skills: p.skills, offer: p.offer }, n: score([p.field, p.skills, p.offer, p.name].join(' ')) }; }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+      if (!asksExam && toks.length) {
+        scored = (await db('students?select=*')).map(function (r) { var p = toStudent(r), o = { user_id: r.user_id, name: p.name, field: p.field, skills: p.skills, offer: String(p.offer || '').trim() }; return { p: o, n: scoreText(toks, [o.field, o.skills, o.offer, o.name].join(' ')) }; }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
       }
       if (scored.length) { try {
         var ids = scored.map(function (x) { return x.p.user_id; }).filter(Boolean).join(',');
         var cs = ids ? await db('contacts?user_id=in.(' + ids + ')&select=user_id,phone') : [], rq = ids ? await db('contact_requests?from_user=eq.' + sess().user.id + '&to_user=in.(' + ids + ')&select=to_user,status') : [];
         scored.forEach(function (x) { var c = cs.filter(function (k) { return k.user_id === x.p.user_id; })[0], r2 = rq.filter(function (k) { return k.to_user === x.p.user_id; })[0]; x.p.phone = c && c.phone ? c.phone : ''; x.p.req = r2 ? r2.status : ''; x.p.me = x.p.user_id === sess().user.id; });
       } catch (e) {} }
+      scored.forEach(function (x) { x.p.note = personNote(x.p, whyNote(tobj, x.p)); });
       var ps = []; try { ps = await db('posts?select=*&is_public=eq.true&order=created_at.desc'); } catch (e) {}
-      var pm = ps.filter(function (x) { return !asksExam || x.kind === 'épreuve'; }).map(function (x) { return { x: x, n: score([x.title, x.body, x.author, x.kind].join(' ')) }; }).filter(function (y) { return toks.length ? y.n > 0 : asksExam; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
-      if (!scored.length && !pm.length) return res({ found: false, answer: asksExam ? 'Je n’ai trouvé aucune épreuve correspondante pour l’instant. Tu peux en publier une dans ton blog.' : 'Je n’ai trouvé personne ni aucun article pour l’instant. Essaie avec d’autres mots, par exemple une compétence (design, marketing…) ou une filière.', matches: [], posts: [], sources: [] });
+      var pm = ps.filter(function (x) { return !asksExam || x.kind === 'épreuve'; }).map(function (x) { return { x: x, n: scoreText(toks, [x.title, x.body, x.author, x.kind].join(' ')) }; }).filter(function (y) { return toks.length ? y.n > 0 : asksExam; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+      if (!scored.length && !pm.length) return res({ found: false, answer: asksExam ? 'Je n’ai trouvé aucune épreuve pour « ' + q60 + ' » pour l’instant. Tu peux en publier une dans ton blog.' : 'Je n’ai rien trouvé pour « ' + q60 + ' ». Si c’est un mot en langue locale, il n’a peut-être pas encore été écrit sur NeXt : essaie un mot voisin ou son équivalent en français. Chaque membre qui publie avec ce mot l’ajoute à NeXt.', matches: [], posts: [], sources: [] });
+      var np = scored.length, na = pm.length, what = [np ? np + (np > 1 ? ' personnes' : ' personne') : '', na ? na + (asksExam ? (na > 1 ? ' épreuves' : ' épreuve') : (na > 1 ? ' articles' : ' article')) : ''].filter(Boolean).join(' et ');
       var srcs = scored.map(function (x) { return { label: 'Fiche de ' + x.p.name }; }).concat(pm.map(function (y) { return { label: 'Article « ' + y.x.title + ' » — blog de ' + y.x.author, post: y.x.id, q: y.x.title, k: y.x.kind }; }));
-      return res({ found: true, answer: 'Voici ce que j’ai trouvé sur NeXt :', matches: scored.map(function (x) { return x.p; }), posts: pm.map(function (y) { return { id: y.x.id, kind: y.x.kind, title: y.x.title, body: String(y.x.body || '').slice(0, 160), images: (y.x.images || []).slice(0, 3), author: y.x.author }; }), sources: srcs });
+      return res({ found: true, answer: 'J’ai trouvé ' + what + ' pour « ' + q60 + ' ». ' + (np ? 'Voici les fiches, avec la raison pour laquelle elles ressortent.' : 'Voici ce que j’ai trouvé.'), matches: scored.map(function (x) { return x.p; }), posts: pm.map(function (y) { return { id: y.x.id, kind: y.x.kind, title: y.x.title, body: String(y.x.body || '').slice(0, 160), images: (y.x.images || []).slice(0, 3), author: y.x.author }; }), sources: srcs });
+    }
+    if (path === '/api/vision' && m === 'POST') {
+      var vr = await real('/api/vision', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess().access_token }, body: opts.body });
+      var vd = await vr.json().catch(function () { return {}; });
+      return res(vd, vr.status);
     }
     if (path === '/api/contact-request' && m === 'POST') {
       var meU = sess().user.id, dup = await db('contact_requests?from_user=eq.' + meU + '&to_user=eq.' + encodeURIComponent(body.to_user) + '&select=id');
@@ -760,14 +806,17 @@ html.kb,html.kb body{overflow:hidden}
     thread.insertAdjacentHTML('beforeend', `<div class="m-user">${esc(text)}${hadAtt.map(a => a.img ? `<img src="${esc(a.img)}" alt="" style="display:block;max-width:160px;border-radius:10px;margin-top:6px">` : `<span style="display:block;margin-top:6px;font-size:13px">📎 ${esc(a.name)}</span>`).join('')}</div>`);
     const bot = document.createElement('div'); bot.className = 'm-bot'; bot.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
     thread.appendChild(bot); atts = []; attBox.hidden = true; attBox.innerHTML = ''; q.value = ''; grow(); thread.scrollTop = thread.scrollHeight;
+    let visionUsed = false;
     try {
-      const r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ q: text }) });
+      let r = null; const vimg = hadAtt.find(a => a.full);
+      if (vimg) { try { r = await api('/api/vision', { method: 'POST', body: JSON.stringify({ image: vimg.full, q: text === 'Pièce jointe' ? '' : text }) }); visionUsed = !!(r && r.vision); } catch (e) { r = null; } }
+      if (!r) r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ q: text }) });
       await new Promise(r => setTimeout(r, 300));
       if (!r.found) bot.classList.add('none');
-      bot.innerHTML = esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 6px">${esc(m.field || '')}</p>${m.offer ? `<p><i>Propose :</i> ${esc(m.offer)}</p>` : ''}<div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
+      bot.innerHTML = esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 8px">${esc(m.note || '')}</p><div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
-    if (hadAtt.length) bot.insertAdjacentHTML('beforeend', '<span class="src">Les pièces jointes ne sont pas encore analysées par NeXt : la réponse se base sur ton texte.</span>');
+    if (hadAtt.length && !visionUsed) bot.insertAdjacentHTML('beforeend', '<span class="src">Cette pièce jointe n’a pas pu être analysée : la réponse se base sur ton texte.</span>');
     saveConv(text);
   });
 
@@ -778,7 +827,7 @@ html.kb,html.kb body{overflow:hidden}
   document.addEventListener('click', e => { if (!e.target.closest('#plus-menu')) plusMenu.hidden = true; });
   plusMenu.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (!b) return; plusMenu.hidden = true; $('#in-' + b.dataset.pick).click(); });
   ['photo', 'cam', 'file'].forEach(k => $('#in-' + k).addEventListener('change', async e => {
-    for (const f of [...e.target.files]) { if (atts.length >= 3) break; atts.push({ name: f.name || 'Photo', img: f.type.indexOf('image/') === 0 ? await shrink(f, 400) : '' }); }
+    for (const f of [...e.target.files]) { if (atts.length >= 3) break; const isImg = f.type.indexOf('image/') === 0; atts.push({ name: f.name || 'Photo', img: isImg ? await shrink(f, 400) : '', full: isImg ? await shrink(f, 800) : '' }); }
     e.target.value = ''; renderAtt();
   }));
   attBox.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; atts.splice(+b.dataset.rm, 1); renderAtt(); });
@@ -790,6 +839,22 @@ html.kb,html.kb body{overflow:hidden}
   function markTheme() { const t = document.documentElement.dataset.theme || 'orange'; document.querySelectorAll('#theme-dots button').forEach(b => b.classList.toggle('on', b.dataset.theme === t)); }
   $('#theme-dots').addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (!b) return; document.documentElement.dataset.theme = b.dataset.theme; try { localStorage.setItem('nx_theme', b.dataset.theme); } catch (er) {} markTheme(); });
   markTheme();
+
+  /* ---------- infos ---------- */
+  const INFO = {
+    search: 'Écris un mot, un produit, un métier ou une compétence, en français ou dans ta langue locale. Avec le +, tu peux joindre une photo ou un fichier. Chaque réponse indique d’où vient l’information.',
+    blog: 'Mon blog : tes publications. Produit / service : ce que les membres proposent. Épreuves : les sujets des années passées. Avec + Écrire, tu publies en public (visible par tous) ou en privé (visible par toi seul), et tu peux modifier ou supprimer à tout moment.',
+    req: 'Quand un membre veut te contacter et que ton numéro est privé, sa demande arrive ici. Accepte pour lui montrer ton numéro. Tu peux aussi refuser ou retirer l’accès quand tu veux.',
+    recents: 'Tes discussions sont gardées ici, sur ce téléphone. Appuie sur ⋯ pour épingler, renommer ou supprimer une discussion.',
+    theme: 'Choisis ta couleur préférée. Elle change le fond et le X du logo, seulement pour toi.',
+    phone: 'Privé : ton numéro n’est montré qu’aux membres que tu acceptes. Public : tous les membres connectés peuvent le voir. Tu peux le changer à tout moment.'
+  };
+  const infoPop = document.createElement('div'); infoPop.id = 'info-pop'; infoPop.hidden = true; document.body.appendChild(infoPop);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.info');
+    if (b) { e.preventDefault(); e.stopPropagation(); infoPop.innerHTML = `<p>${esc(INFO[b.dataset.info] || '')}</p><button type="button" id="info-x">Compris</button>`; infoPop.hidden = false; return; }
+    if (!e.target.closest('#info-pop') || e.target.id === 'info-x') infoPop.hidden = true;
+  });
 
   /* ---------- récents ---------- */
   const convKey = () => { try { return 'nx_convs_' + JSON.parse(localStorage.getItem('nx_sess')).user.id; } catch (e) { return 'nx_convs'; } };
