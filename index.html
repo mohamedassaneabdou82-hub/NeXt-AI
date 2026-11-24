@@ -244,7 +244,7 @@ html.kb,html.kb body{overflow:hidden}
 #info-pop{position:fixed;left:16px;right:16px;bottom:24px;max-width:520px;margin:0 auto;background:#232427;border:1px solid var(--line);border-radius:18px;padding:16px;z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.6)}
 #info-pop[hidden]{display:none}#info-pop p{margin:0;font-size:14.5px;color:var(--ink)}
 #info-pop button{margin-top:12px;border:0;border-radius:10px;padding:8px 16px;background:var(--c);color:#fff}
-.dot-wrap{position:relative}
+.dot-wrap{position:relative;margin-left:auto}
 .dot{width:28px;height:28px;border-radius:50%;background:var(--c);border:2px solid rgba(255,255,255,.75);padding:0;cursor:pointer}
 #theme-dots{position:absolute;right:0;top:38px;background:#232427;border:1px solid var(--line);border-radius:999px;padding:8px 12px;z-index:30}
 </style>
@@ -302,9 +302,6 @@ html.kb,html.kb body{overflow:hidden}
     </div>
     <div id="att" hidden></div>
     <form id="ask" class="bar">
-      <button type="button" class="pin" id="plus" aria-label="Ajouter une photo ou un fichier"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-      <div class="plus-menu" id="plus-menu" hidden><button type="button" data-pick="photo">Photos</button><button type="button" data-pick="cam">Appareil photo</button><button type="button" data-pick="file">Fichier</button></div>
-      <input id="in-photo" type="file" accept="image/*" multiple hidden><input id="in-cam" type="file" accept="image/*" capture="environment" hidden><input id="in-file" type="file" hidden>
       <textarea id="q" rows="1" placeholder="Demande à NeXt" aria-label="Ta question"></textarea>
       <button type="submit" class="send" id="send" aria-label="Envoyer" disabled>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -854,15 +851,8 @@ html.kb,html.kb body{overflow:hidden}
   });
 
   /* ---------- pièces jointes + clavier ---------- */
-  const attBox = $('#att'), plusMenu = $('#plus-menu');
+  const attBox = $('#att');
   function renderAtt() { attBox.hidden = !atts.length; attBox.innerHTML = atts.map((a, i) => `<span class="att">${a.img ? `<img src="${esc(a.img)}" alt="">` : ''}<span>${esc(a.name)}</span><button type="button" data-rm="${i}" aria-label="Retirer">×</button></span>`).join(''); grow(); }
-  $('#plus').addEventListener('click', e => { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; });
-  document.addEventListener('click', e => { if (!e.target.closest('#plus-menu')) plusMenu.hidden = true; });
-  plusMenu.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (!b) return; plusMenu.hidden = true; $('#in-' + b.dataset.pick).click(); });
-  ['photo', 'cam', 'file'].forEach(k => $('#in-' + k).addEventListener('change', async e => {
-    for (const f of [...e.target.files]) { if (atts.length >= 3) break; const isImg = f.type.indexOf('image/') === 0; atts.push({ name: f.name || 'Photo', img: isImg ? await shrink(f, 400) : '', full: isImg ? await shrink(f, 800) : '' }); }
-    e.target.value = ''; renderAtt();
-  }));
   attBox.addEventListener('click', e => { const b = e.target.closest('[data-rm]'); if (!b) return; atts.splice(+b.dataset.rm, 1); renderAtt(); });
   q.addEventListener('focus', () => { document.documentElement.classList.add('kb'); setTimeout(() => window.scrollTo(0, 0), 50); });
   q.addEventListener('blur', () => document.documentElement.classList.remove('kb'));
