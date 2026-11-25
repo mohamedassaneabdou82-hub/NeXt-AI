@@ -247,6 +247,13 @@ html.kb,html.kb body{overflow:hidden}
 .dot-wrap{position:relative;margin-left:auto}
 .dot{width:28px;height:28px;border-radius:50%;background:var(--c);border:2px solid rgba(255,255,255,.75);padding:0;cursor:pointer}
 #theme-dots{position:absolute;right:0;top:38px;background:#232427;border:1px solid var(--line);border-radius:999px;padding:8px 12px;z-index:30}
+.ans-imgs{display:flex;gap:10px;overflow-x:auto;margin-bottom:10px;white-space:normal}
+.ans-imgs figure{margin:0;flex:0 0 auto;max-width:78%}.ans-imgs figure:only-child{flex:1;max-width:100%}
+.ans-imgs img{width:100%;max-height:260px;object-fit:cover;border-radius:14px;cursor:pointer;display:block}
+.ans-imgs figcaption{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.acts{display:flex;gap:20px;margin-top:12px;white-space:normal}
+.acts button{border:0;background:none;color:var(--ink-2);padding:6px;display:grid;place-items:center}
+.acts button.on{color:var(--c)}
 </style>
 <script>window.__API_BASE__ = '';</script>
 <script>try{var t=localStorage.getItem('nx_theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -843,10 +850,12 @@ html.kb,html.kb body{overflow:hidden}
       if (!r) r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ q: text }) });
       await new Promise(r => setTimeout(r, 300));
       if (!r.found) bot.classList.add('none');
-      bot.innerHTML = esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 8px">${esc(m.note || '')}</p><div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
+      const shots = (r.posts || []).map(p => ({ s: (p.images || [])[0], t: p.title })).filter(x => x.s).slice(0, 3);
+      bot.innerHTML = (shots.length ? `<div class="ans-imgs">${shots.map(x => `<figure><img src="${esc(x.s)}" alt="${esc(x.t)}" data-src="${esc(x.s)}"><figcaption>${esc(x.t)}</figcaption></figure>`).join('')}</div>` : '') + esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 8px">${esc(m.note || '')}</p><div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
     if (hadAtt.length && !visionUsed) bot.insertAdjacentHTML('beforeend', '<span class="src">Cette pièce jointe n’a pas pu être analysée : la réponse se base sur ton texte.</span>');
+    bot.insertAdjacentHTML('beforeend', actsHtml(text));
     saveConv(text);
   });
 
@@ -879,6 +888,26 @@ html.kb,html.kb body{overflow:hidden}
     const b = e.target.closest('.info');
     if (b) { e.preventDefault(); e.stopPropagation(); infoPop.innerHTML = `<p>${esc(INFO[b.dataset.info] || '')}</p><button type="button" id="info-x">Compris</button>`; infoPop.hidden = false; return; }
     if (!e.target.closest('#info-pop') || e.target.id === 'info-x') infoPop.hidden = true;
+  });
+
+  /* ---------- actions sous chaque réponse ---------- */
+  const I = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const actsHtml = qtxt => `<div class="acts" data-q="${esc(qtxt)}"><button type="button" data-a="up" aria-label="Réponse utile">${I('<path d="M7 10v11H3V10h4zM7 10l4-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 7A2 2 0 0 1 17.3 21H7"/>')}</button><button type="button" data-a="down" aria-label="Réponse pas utile">${I('<path d="M17 14V3h4v11h-4zM17 14l-4 7a2 2 0 0 1-2-2v-4H5.5a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 6.7 3H17"/>')}</button><button type="button" data-a="redo" aria-label="Regénérer la réponse">${I('<path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/>')}</button><button type="button" data-a="share" aria-label="Partager">${I('<path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>')}</button><button type="button" data-a="copy" aria-label="Copier">${I('<rect x="9" y="9" width="11" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>')}</button></div>`;
+  async function copyText(t) {
+    try { await navigator.clipboard.writeText(t); }
+    catch (e) { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (er) {} ta.remove(); }
+    toast('Copié');
+  }
+  thread.addEventListener('click', async e => {
+    const b = e.target.closest('.acts [data-a]'); if (!b) return;
+    const bar = b.parentElement, bubble = bar.closest('.m-bot'), qtxt = bar.dataset.q || '', ans = (bubble ? bubble.innerText : '').trim();
+    if (b.dataset.a === 'copy') { copyText(ans); return; }
+    if (b.dataset.a === 'share') { const t = qtxt + '\n\n' + ans + '\n\nNeXt : ' + location.origin; if (navigator.share) { try { await navigator.share({ text: t }); } catch (er) {} } else copyText(t); return; }
+    if (b.dataset.a === 'redo') { q.value = qtxt; grow(); $('#ask').requestSubmit(); return; }
+    if (b.classList.contains('on')) return;
+    bar.querySelectorAll('[data-a=up],[data-a=down]').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    const up = b.dataset.a === 'up';
+    try { await api('/api/feedback', { method: 'POST', body: JSON.stringify({ kind: up ? 'compliment' : 'problème', message: (up ? '👍 Réponse utile' : '👎 Réponse pas utile') + ' — « ' + qtxt + ' »\nRéponse : ' + ans.slice(0, 220) }) }); toast('Merci pour ton avis'); } catch (er) { toast('Avis non envoyé'); }
   });
 
   /* ---------- récents ---------- */
