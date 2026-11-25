@@ -684,7 +684,7 @@ html.kb,html.kb body{overflow:hidden}
       try { await enrich(scored.map(function (x) { return x.p; })); } catch (e) {}
       scored.forEach(function (x) { x.p.note = personNote(x.p, whyNote(tobj, x.p)); });
       var ps = []; try { ps = await db('posts?select=*&is_public=eq.true&order=created_at.desc'); } catch (e) {}
-      var pm = ps.filter(function (x) { return x.kind !== 'autre' && (!asksExam || x.kind === 'épreuve'); }).map(function (x) { var av = availability(x, ps); return { x: x, av: av, n: scoreText(toks, [x.title, x.body, x.author, x.kind].join(' ')) }; }).filter(function (y) { return toks.length ? y.n > 0 : asksExam; }).sort(function (a, b) { return (Number(a.av.done) - Number(b.av.done)) || (b.n - a.n); }).slice(0, 3);
+      var pm = ps.filter(function (x) { return x.kind !== 'autre' && (!asksExam || x.kind === 'épreuve'); }).map(function (x) { var av = availability(x, ps); return { x: x, av: av, n: scoreText(toks, [x.title, x.body, x.kind].join(' ')) }; }).filter(function (y) { return toks.length ? y.n > 0 : asksExam; }).sort(function (a, b) { return (Number(a.av.done) - Number(b.av.done)) || (b.n - a.n); }).slice(0, 3);
       var po = pm.map(function (y) { return { id: y.x.id, kind: y.x.kind, title: y.x.title, body: String(y.x.body || '').slice(0, 160), images: (y.x.images || []).slice(0, 3), author: y.x.author, user_id: y.x.user_id, price: y.x.price, lat: y.x.lat, lng: y.x.lng, finished: y.av.done, upd: y.av.upd || '' }; });
       try { await enrich(po.filter(function (p) { return p.kind === 'produit'; })); } catch (e) {}
       if (!scored.length && !po.length) return res({ found: false, answer: asksExam ? 'Je n’ai trouvé aucune épreuve pour « ' + q60 + ' » pour l’instant. Tu peux en publier une dans ton blog.' : 'Je n’ai rien trouvé pour « ' + q60 + ' ». Si c’est un mot en langue locale, il n’a peut-être pas encore été écrit sur NeXt : essaie un mot voisin ou son équivalent en français. Chaque membre qui publie avec ce mot l’ajoute à NeXt.', matches: [], posts: [], sources: [] });
@@ -879,7 +879,7 @@ html.kb,html.kb body{overflow:hidden}
       await new Promise(r => setTimeout(r, 300));
       if (!r.found) bot.classList.add('none');
       const shots = (r.posts || []).map(p => ({ s: (p.images || [])[0], t: p.title })).concat((r.matches || []).map(m => ({ s: m.avatar, t: m.name }))).filter(x => x.s).slice(0, 3);
-      bot.innerHTML = (shots.length ? `<div class="ans-imgs">${shots.map(x => `<figure><img src="${esc(x.s)}" alt="${esc(x.t)}" data-src="${esc(x.s)}"><figcaption>${esc(x.t)}</figcaption></figure>`).join('')}</div>` : '') + esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span>${p.finished ? ' <span class="tag">Terminé</span>' : ''}<h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${p.kind === 'produit' ? shopHtml(p) : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 8px">${esc(m.note || '')}</p><div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
+      bot.innerHTML = (shots.length ? `<div class="ans-imgs">${shots.map(x => `<figure><img src="${esc(x.s)}" alt="${esc(x.t)}" data-src="${esc(x.s)}"><figcaption>${esc(x.t)}</figcaption></figure>`).join('')}</div>` : '') + esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span>${p.finished ? ' <span class="tag">Terminé</span>' : ''}<h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${p.kind === 'produit' ? shopHtml(p) : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 8px">${esc(m.note || '')}</p><div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}</div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
     if (hadAtt.length && !visionUsed) bot.insertAdjacentHTML('beforeend', '<span class="src">Cette pièce jointe n’a pas pu être analysée : la réponse se base sur ton texte.</span>');
@@ -905,7 +905,7 @@ html.kb,html.kb body{overflow:hidden}
   /* ---------- infos ---------- */
   const INFO = {
     search: 'Écris un mot, un produit, un métier ou une compétence, en français ou dans ta langue locale. Avec le +, tu peux joindre une photo ou un fichier. Chaque réponse indique d’où vient l’information.',
-    blog: 'Mon blog : tes publications. Produit / service : ce que les membres proposent. Épreuves : les sujets des années passées. Avec + Écrire, tu publies en public (visible par tous) ou en privé (visible par toi seul), et tu peux modifier ou supprimer à tout moment.',
+    blog: 'Mon blog : tes mises à jour (type Autre), par exemple pour dire qu’un produit est terminé. Produit / service : ce que les membres proposent, y compris tes produits que tu peux modifier ou supprimer. Épreuves : les sujets des années passées. Avec + Écrire, tu publies en public (visible par tous) ou en privé (visible par toi seul), et tu peux modifier ou supprimer à tout moment.',
     req: 'Quand un membre veut te contacter et que ton numéro est privé, sa demande arrive ici. Accepte pour lui montrer ton numéro. Tu peux aussi refuser ou retirer l’accès quand tu veux.',
     recents: 'Tes discussions sont gardées ici, sur ce téléphone. Appuie sur ⋯ pour épingler, renommer ou supprimer une discussion.',
     theme: 'Choisis ta couleur préférée. Elle change le fond et le X du logo, seulement pour toi.',
@@ -1000,10 +1000,10 @@ html.kb,html.kb body{overflow:hidden}
   const shopHtml = p => {
     let s = '';
     if (p.price != null && p.price !== '') s += `<p><strong>${esc(fcfa(p.price))}</strong></p>`;
-    if ('me' in p && !p.me) s += p.phone ? `<div class="pact"><a class="call" href="${telHref(p.phone)}">${esc(p.phone)}</a><a class="wa" href="${waHref(p.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (p.req === 'pending' ? '<small>Demande de contact envoyée au vendeur.</small>' : (p.req === 'declined' ? '<small>Demande refusée par le vendeur.</small>' : `<button type="button" class="btn" data-ask="${esc(p.user_id)}">Demander le numéro du vendeur</button>`));
+    if ('phone' in p) s += p.phone ? `<div class="pact"><a class="call" href="${telHref(p.phone)}">${esc(p.phone)}</a><a class="wa" href="${waHref(p.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (p.me ? '' : (p.req === 'pending' ? '<small>Demande de contact envoyée au vendeur.</small>' : (p.req === 'declined' ? '<small>Demande refusée par le vendeur.</small>' : `<button type="button" class="btn" data-ask="${esc(p.user_id)}">Demander le numéro du vendeur</button>`)));
     if (p.lat != null && p.lng != null) s += `<small><a href="https://www.google.com/maps?q=${esc(p.lat)},${esc(p.lng)}" target="_blank" rel="noopener">📍 Voir la localisation sur Google Maps</a></small>`;
     if (p.finished) s += `<small>Terminé : ${esc(p.upd || 'le vendeur l’a indiqué')}.</small>`;
-    else if (!p.mine && !p.me) s += `<div style="margin-top:8px">${cartBtn(p)}</div>`;
+    else s += `<div style="margin-top:8px">${cartBtn(p)}</div>`;
     return s;
   };
   const cartKey = () => convKey().replace('convs', 'cart');
@@ -1055,7 +1055,7 @@ html.kb,html.kb body{overflow:hidden}
   }
   async function loadBlog() {
     $('#bl-list').innerHTML = '<p class="muted">Chargement…</p>';
-    try { const d = await api('/api/posts?q=' + encodeURIComponent($('#bl-q').value.trim()) + (blTab === 'mine' ? '&mine=1' : '')); blData = (d.posts || []).filter(p => blTab === 'exam' ? p.kind === 'épreuve' : (blTab === 'posts' ? p.kind === 'produit' : p.kind !== 'épreuve')); blRender(); }
+    try { const d = await api('/api/posts?q=' + encodeURIComponent($('#bl-q').value.trim()) + (blTab === 'mine' ? '&mine=1' : '')); blData = (d.posts || []).filter(p => blTab === 'exam' ? p.kind === 'épreuve' : (blTab === 'posts' ? p.kind === 'produit' : p.kind === 'autre')); blRender(); }
     catch (e) { $('#bl-list').innerHTML = '<p class="err">Impossible de charger les blogs.</p>'; }
   }
   function initBlog() { $('#bl-q').value = blPre; blPre = ''; document.querySelectorAll('#bl-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === blTab)); loadBlog(); }
@@ -1084,7 +1084,7 @@ html.kb,html.kb body{overflow:hidden}
   $('#bl-x').addEventListener('click', () => blOv.hidden = true);
   $('#bl-f').addEventListener('submit', async e => {
     e.preventDefault(); const b = e.target.querySelector('button[type=submit]'); b.disabled = true; $('#bl-err').textContent = '';
-    try { await api('/api/posts', { method: 'POST', body: JSON.stringify({ id: blEdit ? blEdit.id : undefined, kind: $('#bl-kind').value, is_public: $('#bl-vis').value === '1', price: $('#bl-kind').value === 'produit' && $('#bl-price').value !== '' ? Number($('#bl-price').value) : null, lat: $('#bl-kind').value === 'produit' && blLoc ? blLoc.lat : null, lng: $('#bl-kind').value === 'produit' && blLoc ? blLoc.lng : null, title: $('#bl-title').value.trim(), body: $('#bl-body').value.trim(), images: blImgs }) }); blOv.hidden = true; toast('Article publié'); blTab = $('#bl-kind').value === 'épreuve' ? 'exam' : 'mine'; initBlog(); }
+    try { await api('/api/posts', { method: 'POST', body: JSON.stringify({ id: blEdit ? blEdit.id : undefined, kind: $('#bl-kind').value, is_public: $('#bl-vis').value === '1', price: $('#bl-kind').value === 'produit' && $('#bl-price').value !== '' ? Number($('#bl-price').value) : null, lat: $('#bl-kind').value === 'produit' && blLoc ? blLoc.lat : null, lng: $('#bl-kind').value === 'produit' && blLoc ? blLoc.lng : null, title: $('#bl-title').value.trim(), body: $('#bl-body').value.trim(), images: blImgs }) }); blOv.hidden = true; toast('Article publié'); blTab = $('#bl-kind').value === 'épreuve' ? 'exam' : ($('#bl-kind').value === 'produit' ? 'posts' : 'mine'); initBlog(); }
     catch (er) { $('#bl-err').textContent = 'Publication impossible. Réessaie.'; }
     b.disabled = false;
   });
