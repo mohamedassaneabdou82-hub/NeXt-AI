@@ -283,6 +283,10 @@ html.kb,html.kb body{overflow:hidden}
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
       Blogs
     </button>
+    <button class="side-item" data-go="cart">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 7H6"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>
+      Panier <span id="cart-count"></span>
+    </button>
     <button class="side-item" data-go="req">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
       Demandes de contact
@@ -390,6 +394,12 @@ html.kb,html.kb body{overflow:hidden}
       <div id="fb-admin" hidden><h3 style="font-family:var(--display);margin:22px 0 10px">Feedbacks reçus</h3><div id="fb-list"></div></div>
     </div>
   </section>
+  <section id="view-cart" class="view">
+    <div class="exams">
+      <div class="exams-head"><h2>Panier</h2><button class="btn" id="cart-back" type="button">← Discussion</button></div>
+      <div id="cart-list"></div>
+    </div>
+  </section>
 </main>
 
 <!-- MODIFIER LA PAGE D'AUTEUR -->
@@ -423,12 +433,15 @@ html.kb,html.kb body{overflow:hidden}
     </div>
     <form id="prof-form" class="stack">
       <p class="muted">Crée ton profil.</p>
+      <label>Photo de profil (facultatif)<input id="u-photo" type="file" accept="image/*"></label>
+      <div id="u-photo-prev"></div>
       <div class="two">
         <label>Prénom<input id="u-first" autocomplete="given-name" required></label>
         <label>Nom<input id="u-last" autocomplete="family-name" required></label>
       </div>
       <label>Numéro de téléphone<input id="u-phone" type="tel" placeholder="+227 90 00 00 00" autocomplete="tel" required></label>
       <label>Visibilité du numéro <button type="button" class="info" data-info="phone" aria-label="Information">i</button><select id="u-phonevis"><option value="0">Privé : visible seulement si j’accepte une demande</option><option value="1">Public : visible par tous les membres</option></select></label>
+      <label>Recherche par mon nom <button type="button" class="info" data-info="namesearch" aria-label="Information">i</button><select id="u-namesearch"><option value="1">Autorisée : on peut me trouver avec mon nom</option><option value="0">Non autorisée : seulement par mes compétences</option></select></label>
       <label>Sexe
         <select id="u-gender" required>
           <option value="">Choisir</option>
@@ -496,6 +509,10 @@ html.kb,html.kb body{overflow:hidden}
     <label>Type<select id="bl-kind"><option value="produit">Produit ou service</option><option value="épreuve">Épreuve</option><option value="autre">Autre</option></select></label>
     <label>Visibilité<select id="bl-vis"><option value="1">Public : visible par tous les membres</option><option value="0">Privé : visible par moi seul</option></select></label>
     <label>Titre<input id="bl-title" required></label>
+    <div id="bl-shop">
+      <label>Montant en FCFA (facultatif)<input id="bl-price" type="number" inputmode="numeric" min="0" step="1" placeholder="Ex. : 5000"></label>
+      <div><button type="button" class="btn" id="bl-loc">Ajouter ma position (facultatif)</button><span id="bl-loc-st" class="muted" style="margin-left:8px;font-size:13px"></span></div>
+    </div>
     <label>Texte<textarea id="bl-body" rows="5"></textarea></label>
     <label>Photos (facultatif)<input id="bl-img" type="file" accept="image/*" multiple></label>
     <div id="bl-prev"></div>
@@ -534,9 +551,26 @@ html.kb,html.kb body{overflow:hidden}
     return total;
   }
   function whyNote(tobj, o) {
-    var f = [['son produit ou service', o.offer], ['ses compétences', o.skills], ['sa filière', o.field], ['son nom', o.name]], found = [];
+    var f = [['son produit ou service', o.offer], ['ses compétences', o.skills], ['sa filière', o.field], ['son nom', o.nameOk === false ? '' : o.name]], found = [];
     tobj.forEach(function (x) { for (var i = 0; i < f.length; i++) { if (scoreText([x.n], f[i][1]) > 0) { found.push('« ' + x.o + ' » correspond à ' + f[i][0]); break; } } });
     return found.slice(0, 2).join(' et ');
+  }
+  var STRONG_SELF = /\b(termine|terminee|termines|epuise|epuisee|indisponible|rupture)\b|\bplus disponible\b|\bplus de stock\b/;
+  var STRONG_UP = /\b(termine|terminee|termines|epuise|epuisee|indisponible|rupture|vendu|vendue|fini|finie|finis)\b|\bplus disponible\b|\bplus de stock\b/;
+  var BACK = /\ba nouveau\b|\bde nouveau\b|\bretour en stock\b|\breapprovisionne\b|\bnouveau stock\b/;
+  function availability(p, all) {
+    if (p.kind !== 'produit') return { done: false };
+    var self = norm(p.title + ' ' + p.body);
+    if (STRONG_SELF.test(self) && !BACK.test(self)) return { done: true, upd: 'indiqué par ' + p.author + ' dans l’article' };
+    var last = all.filter(function (x) { return x.user_id === p.user_id && x.kind === 'autre' && x.created_at > p.created_at; }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+    if (last) { var t = norm(last.title + ' ' + last.body); if (STRONG_UP.test(t) && !BACK.test(t)) return { done: true, upd: 'dernière mise à jour de ' + p.author + ' du ' + new Date(last.created_at).toLocaleDateString('fr-FR') }; }
+    return { done: false };
+  }
+  async function enrich(items) {
+    var ids = items.map(function (x) { return x.user_id; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).join(',');
+    if (!ids) return;
+    var me = sess().user.id, cs = await db('contacts?user_id=in.(' + ids + ')&select=user_id,phone'), rq = await db('contact_requests?from_user=eq.' + me + '&to_user=in.(' + ids + ')&select=to_user,status');
+    items.forEach(function (x) { var c = cs.filter(function (k) { return k.user_id === x.user_id; })[0], r2 = rq.filter(function (k) { return k.to_user === x.user_id; })[0]; x.phone = c && c.phone ? c.phone : ''; x.req = r2 ? r2.status : ''; x.me = x.user_id === me; });
   }
   function personNote(o, why) {
     var s = o.name + (o.field ? ' est en ' + o.field : ' est membre de NeXt');
@@ -620,11 +654,12 @@ html.kb,html.kb body{overflow:hidden}
 
     if (path === '/api/me') {
       var uid = sess().user.id;
-      var fromRow = function (r) { var n = String(r.full_name || '').trim().split(/\s+/); return { first_name: n[0] || '', last_name: n.slice(1).join(' '), phone: r.phone, phone_public: r.phone_public, field: r.faculty, skills: r.bio, offer: r.offer, gender: r.gender, email: sess().user.email }; };
+      var fromRow = function (r) { var n = String(r.full_name || '').trim().split(/\s+/); return { first_name: n[0] || '', last_name: n.slice(1).join(' '), phone: r.phone, phone_public: r.phone_public, field: r.faculty, skills: r.bio, offer: r.offer, gender: r.gender, avatar: r.avatar_url, name_search: r.name_search !== false, email: sess().user.email }; };
       if (m === 'DELETE') { await db('students?user_id=eq.' + uid, { method: 'DELETE' }); try { await db('contacts?user_id=eq.' + uid, { method: 'DELETE' }); } catch (e) {} return res({ ok: true }); }
       if (m === 'GET') { var rows = await db('students?user_id=eq.' + uid + '&select=*'); var cr = []; try { cr = await db('contacts?user_id=eq.' + uid + '&select=*'); } catch (e) {} return res(rows && rows[0] ? fromRow(Object.assign({}, rows[0], { phone: cr && cr[0] ? cr[0].phone : '', phone_public: cr && cr[0] ? cr[0].is_public : false })) : {}); }
       if (!body.consent) return fail('Coche la case pour accepter que ton profil soit visible.');
-      var row = { full_name: ((body.first_name || '') + ' ' + (body.last_name || '')).trim(), gender: body.gender, faculty: body.field, bio: body.skills, offer: body.offer, contact: null };
+      var row = { full_name: ((body.first_name || '') + ' ' + (body.last_name || '')).trim(), gender: body.gender, faculty: body.field, bio: body.skills, offer: body.offer, contact: null, name_search: body.name_search !== false };
+      if (body.avatar && body.avatar.indexOf('data:') === 0) row.avatar_url = await upload(body.avatar);
       var ex = await db('students?user_id=eq.' + uid + '&select=id');
       if (ex && ex[0]) await db('students?user_id=eq.' + uid, { method: 'PATCH', body: JSON.stringify(row) });
       else await db('students', { method: 'POST', body: JSON.stringify(Object.assign({ user_id: uid }, row)) });
@@ -641,33 +676,22 @@ html.kb,html.kb body{overflow:hidden}
       var tobj = qw.filter(function (x) { return x.n.length > 1 && STOP.indexOf(x.n) < 0 && !EX.test(x.n); }), toks = tobj.map(function (x) { return x.n; });
       var scored = [];
       if (!asksExam && toks.length) {
-        scored = (await db('students?select=*')).map(function (r) { var p = toStudent(r), o = { user_id: r.user_id, name: p.name, field: p.field, skills: p.skills, offer: String(p.offer || '').trim() }; return { p: o, n: scoreText(toks, [o.field, o.skills, o.offer, o.name].join(' ')) }; }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
+        scored = (await db('students?select=*')).map(function (r) {
+          var p = toStudent(r), o = { user_id: r.user_id, name: p.name, field: p.field, skills: p.skills, offer: String(p.offer || '').trim(), avatar: r.avatar_url || '', nameOk: r.name_search !== false };
+          return { p: o, n: scoreText(toks, [o.field, o.skills, o.offer, o.nameOk ? o.name : ''].join(' ')) };
+        }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
       }
-      if (scored.length) { try {
-        var ids = scored.map(function (x) { return x.p.user_id; }).filter(Boolean).join(',');
-        var cs = ids ? await db('contacts?user_id=in.(' + ids + ')&select=user_id,phone') : [], rq = ids ? await db('contact_requests?from_user=eq.' + sess().user.id + '&to_user=in.(' + ids + ')&select=to_user,status') : [];
-        scored.forEach(function (x) { var c = cs.filter(function (k) { return k.user_id === x.p.user_id; })[0], r2 = rq.filter(function (k) { return k.to_user === x.p.user_id; })[0]; x.p.phone = c && c.phone ? c.phone : ''; x.p.req = r2 ? r2.status : ''; x.p.me = x.p.user_id === sess().user.id; });
-      } catch (e) {} }
+      try { await enrich(scored.map(function (x) { return x.p; })); } catch (e) {}
       scored.forEach(function (x) { x.p.note = personNote(x.p, whyNote(tobj, x.p)); });
       var ps = []; try { ps = await db('posts?select=*&is_public=eq.true&order=created_at.desc'); } catch (e) {}
-      var pm = ps.filter(function (x) { return !asksExam || x.kind === 'épreuve'; }).map(function (x) { return { x: x, n: scoreText(toks, [x.title, x.body, x.author, x.kind].join(' ')) }; }).filter(function (y) { return toks.length ? y.n > 0 : asksExam; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 3);
-      if (!scored.length && !pm.length) return res({ found: false, answer: asksExam ? 'Je n’ai trouvé aucune épreuve pour « ' + q60 + ' » pour l’instant. Tu peux en publier une dans ton blog.' : 'Je n’ai rien trouvé pour « ' + q60 + ' ». Si c’est un mot en langue locale, il n’a peut-être pas encore été écrit sur NeXt : essaie un mot voisin ou son équivalent en français. Chaque membre qui publie avec ce mot l’ajoute à NeXt.', matches: [], posts: [], sources: [] });
-      var np = scored.length, na = pm.length, what = [np ? np + (np > 1 ? ' personnes' : ' personne') : '', na ? na + (asksExam ? (na > 1 ? ' épreuves' : ' épreuve') : (na > 1 ? ' articles' : ' article')) : ''].filter(Boolean).join(' et ');
-      var srcs = scored.map(function (x) { return { label: 'Fiche de ' + x.p.name }; }).concat(pm.map(function (y) { return { label: 'Article « ' + y.x.title + ' » — blog de ' + y.x.author, post: y.x.id, q: y.x.title, k: y.x.kind }; }));
-      return res({ found: true, answer: 'J’ai trouvé ' + what + ' pour « ' + q60 + ' ». ' + (np ? 'Voici les fiches, avec la raison pour laquelle elles ressortent.' : 'Voici ce que j’ai trouvé.'), matches: scored.map(function (x) { return x.p; }), posts: pm.map(function (y) { return { id: y.x.id, kind: y.x.kind, title: y.x.title, body: String(y.x.body || '').slice(0, 160), images: (y.x.images || []).slice(0, 3), author: y.x.author }; }), sources: srcs });
-    }
-    if (path === '/api/feedback') {
-      var uf = sess().user.id;
-      if (m === 'POST') {
-        if (!body.message) return fail('Écris un message.');
-        var nf = await db('students?user_id=eq.' + uf + '&select=full_name');
-        await db('feedback', { method: 'POST', body: JSON.stringify({ kind: body.kind || 'idée', message: String(body.message).slice(0, 1500), author: (nf && nf[0] && nf[0].full_name) || String(sess().user.email || 'Membre').split('@')[0] }) });
-        return res({ ok: true });
-      }
-      var ad = await db('admins?user_id=eq.' + uf + '&select=user_id');
-      if (!ad || !ad[0]) return res({ admin: false, items: [] });
-      if (m === 'DELETE') { await db('feedback?id=eq.' + encodeURIComponent(u.searchParams.get('id')), { method: 'DELETE' }); return res({ ok: true }); }
-      return res({ admin: true, items: await db('feedback?select=*&order=created_at.desc&limit=100') });
+      var pm = ps.filter(function (x) { return x.kind !== 'autre' && (!asksExam || x.kind === 'épreuve'); }).map(function (x) { var av = availability(x, ps); return { x: x, av: av, n: scoreText(toks, [x.title, x.body, x.author, x.kind].join(' ')) }; }).filter(function (y) { return toks.length ? y.n > 0 : asksExam; }).sort(function (a, b) { return (Number(a.av.done) - Number(b.av.done)) || (b.n - a.n); }).slice(0, 3);
+      var po = pm.map(function (y) { return { id: y.x.id, kind: y.x.kind, title: y.x.title, body: String(y.x.body || '').slice(0, 160), images: (y.x.images || []).slice(0, 3), author: y.x.author, user_id: y.x.user_id, price: y.x.price, lat: y.x.lat, lng: y.x.lng, finished: y.av.done, upd: y.av.upd || '' }; });
+      try { await enrich(po.filter(function (p) { return p.kind === 'produit'; })); } catch (e) {}
+      if (!scored.length && !po.length) return res({ found: false, answer: asksExam ? 'Je n’ai trouvé aucune épreuve pour « ' + q60 + ' » pour l’instant. Tu peux en publier une dans ton blog.' : 'Je n’ai rien trouvé pour « ' + q60 + ' ». Si c’est un mot en langue locale, il n’a peut-être pas encore été écrit sur NeXt : essaie un mot voisin ou son équivalent en français. Chaque membre qui publie avec ce mot l’ajoute à NeXt.', matches: [], posts: [], sources: [] });
+      var np = scored.length, na = po.length, what = [np ? np + (np > 1 ? ' personnes' : ' personne') : '', na ? na + (asksExam ? (na > 1 ? ' épreuves' : ' épreuve') : (na > 1 ? ' articles' : ' article')) : ''].filter(Boolean).join(' et ');
+      var fin = po.filter(function (p) { return p.finished; });
+      var srcs = scored.map(function (x) { return { label: 'Fiche de ' + x.p.name }; }).concat(po.map(function (p) { return { label: 'Article « ' + p.title + ' » — blog de ' + p.author, post: p.id, q: p.title, k: p.kind }; })).concat(fin.map(function (p) { return { label: 'Mise à jour : ' + p.upd }; }));
+      return res({ found: true, answer: 'J’ai trouvé ' + what + ' pour « ' + q60 + ' ». ' + (np ? 'Voici les fiches, avec la raison pour laquelle elles ressortent.' : 'Voici ce que j’ai trouvé.') + (fin.length ? ' Attention : ' + fin.map(function (p) { return '« ' + p.title + ' » est terminé (' + p.upd + ').'; }).join(' ') : ''), matches: scored.map(function (x) { return x.p; }), posts: po, sources: srcs });
     }
     if (path === '/api/vision' && m === 'POST') {
       var vr = await real('/api/vision', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + sess().access_token }, body: opts.body });
@@ -691,7 +715,7 @@ html.kb,html.kb body{overflow:hidden}
       if (m === 'POST') {
         if (!body.title) return fail('Ajoute un titre.');
         var imgs = []; for (var i2 = 0; i2 < (body.images || []).length; i2++) { var im2 = body.images[i2]; imgs.push(im2.indexOf('data:') === 0 ? await upload(im2) : im2); }
-        var rowp = { is_public: body.is_public !== false, kind: body.kind || 'produit', title: body.title, body: body.body || '', images: imgs };
+        var rowp = { price: body.price == null ? null : Number(body.price), lat: body.lat == null ? null : Number(body.lat), lng: body.lng == null ? null : Number(body.lng), is_public: body.is_public !== false, kind: body.kind || 'produit', title: body.title, body: body.body || '', images: imgs };
         if (body.id) { await db('posts?id=eq.' + encodeURIComponent(body.id), { method: 'PATCH', body: JSON.stringify(rowp) }); return res({ ok: true }); }
         var me2 = await db('students?user_id=eq.' + uid2 + '&select=full_name');
         rowp.author = (me2 && me2[0] && me2[0].full_name) || String(sess().user.email || 'Membre').split('@')[0];
@@ -775,6 +799,7 @@ html.kb,html.kb body{overflow:hidden}
     if (v === 'exams') initExams();
     if (v === 'blog') initBlog();
     if (v === 'req') loadReq();
+    if (v === 'cart') renderCart();
     if (v === 'fb') loadFb();
   }
   document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { if (b.dataset.new) resetChat(); go(b.dataset.go); closeSide(); }));
@@ -802,6 +827,7 @@ html.kb,html.kb body{overflow:hidden}
       $('#signup').onclick = openProfile;
     }
   }
+  let profPhoto = '';
   const profOv = $('#prof-overlay');
   function openProfile() {
     closeSide(); $('#prof-err').textContent = '';
@@ -811,16 +837,18 @@ html.kb,html.kb body{overflow:hidden}
     $('#u-phone').value = me.phone || ''; $('#u-phonevis').value = me.phone_public ? '1' : '0'; $('#u-field').value = me.field || '';
     $('#u-skills').value = me.skills || ''; $('#u-email').value = me.email || '';
     $('#u-gender').value = me.gender || ''; $('#u-offer').value = me.offer || '';
+    profPhoto = ''; $('#u-photo').value = ''; $('#u-photo-prev').innerHTML = me.avatar ? `<img src="${esc(me.avatar)}" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover">` : ''; $('#u-namesearch').value = me.name_search === false ? '0' : '1';
     $('#u-consent').checked = edit && !!me.phone;
     profOv.hidden = false; setTimeout(() => $('#u-first').focus(), 50);
   }
+  $('#u-photo').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; profPhoto = await shrink(f, 400) || ''; $('#u-photo-prev').innerHTML = profPhoto ? `<img src="${esc(profPhoto)}" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover">` : ''; });
   $('#prof-close').addEventListener('click', () => profOv.hidden = true);
   profOv.addEventListener('click', e => { if (e.target === profOv) profOv.hidden = true; });
   $('#prof-form').addEventListener('submit', async e => {
     e.preventDefault();
     try {
       me = await api('/api/me', { method: 'POST', body: JSON.stringify({
-        first_name: $('#u-first').value, last_name: $('#u-last').value, phone: $('#u-phone').value, phone_public: $('#u-phonevis').value === '1',
+        first_name: $('#u-first').value, last_name: $('#u-last').value, phone: $('#u-phone').value, phone_public: $('#u-phonevis').value === '1', avatar: profPhoto, name_search: $('#u-namesearch').value === '1',
         field: $('#u-field').value, skills: $('#u-skills').value, email: $('#u-email').value,
         gender: $('#u-gender').value, offer: $('#u-offer').value, consent: $('#u-consent').checked }) });
       profOv.hidden = true; renderMe(); toast('Profil enregistré. Les autres membres peuvent maintenant te trouver.');
@@ -850,8 +878,8 @@ html.kb,html.kb body{overflow:hidden}
       if (!r) r = await api('/api/ask', { method: 'POST', body: JSON.stringify({ q: text }) });
       await new Promise(r => setTimeout(r, 300));
       if (!r.found) bot.classList.add('none');
-      const shots = (r.posts || []).map(p => ({ s: (p.images || [])[0], t: p.title })).filter(x => x.s).slice(0, 3);
-      bot.innerHTML = (shots.length ? `<div class="ans-imgs">${shots.map(x => `<figure><img src="${esc(x.s)}" alt="${esc(x.t)}" data-src="${esc(x.s)}"><figcaption>${esc(x.t)}</figcaption></figure>`).join('')}</div>` : '') + esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span><h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 8px">${esc(m.note || '')}</p><div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
+      const shots = (r.posts || []).map(p => ({ s: (p.images || [])[0], t: p.title })).concat((r.matches || []).map(m => ({ s: m.avatar, t: m.name }))).filter(x => x.s).slice(0, 3);
+      bot.innerHTML = (shots.length ? `<div class="ans-imgs">${shots.map(x => `<figure><img src="${esc(x.s)}" alt="${esc(x.t)}" data-src="${esc(x.s)}"><figcaption>${esc(x.t)}</figcaption></figure>`).join('')}</div>` : '') + esc(r.answer) + (r.posts || []).map(p => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><span class="tag">${esc(p.kind)}</span>${p.finished ? ' <span class="tag">Terminé</span>' : ''}<h3>${esc(p.title)}</h3>${p.body ? `<p>${esc(p.body)}</p>` : ''}${p.kind === 'produit' ? shopHtml(p) : ''}<small>Source : blog de ${esc(p.author)}</small></div>`).join('') + (r.matches || []).map(m => `<div class="bl-card" style="margin:10px 0 0;white-space:normal"><h3>${esc(m.name)}</h3><p style="margin:0 0 8px">${esc(m.note || '')}</p><div class="skills">${(m.skills || '').split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>${m.phone ? `<div class="pact"><a class="call" href="${telHref(m.phone)}">${esc(m.phone)}</a><a class="wa" href="${waHref(m.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (m.me ? '' : (m.req === 'pending' ? '<small>Demande envoyée, en attente de réponse.</small>' : (m.req === 'declined' ? '<small>Demande refusée.</small>' : `<button type="button" class="btn" data-ask="${esc(m.user_id)}">Demander à être contacté</button>`)))}<small style="margin-top:6px"><a href="#" class="srclink" data-q="${esc(m.name)}">Voir son blog</a></small></div>`).join('') + srcHtml(r.sources);
     } catch (err) { bot.classList.add('none'); bot.textContent = 'NeXt est momentanément indisponible. Réessaie dans un instant.'; }
     thread.scrollTop = thread.scrollHeight;
     if (hadAtt.length && !visionUsed) bot.insertAdjacentHTML('beforeend', '<span class="src">Cette pièce jointe n’a pas pu être analysée : la réponse se base sur ton texte.</span>');
@@ -881,6 +909,7 @@ html.kb,html.kb body{overflow:hidden}
     req: 'Quand un membre veut te contacter et que ton numéro est privé, sa demande arrive ici. Accepte pour lui montrer ton numéro. Tu peux aussi refuser ou retirer l’accès quand tu veux.',
     recents: 'Tes discussions sont gardées ici, sur ce téléphone. Appuie sur ⋯ pour épingler, renommer ou supprimer une discussion.',
     theme: 'Choisis ta couleur préférée. Elle change le fond et le X du logo, seulement pour toi.',
+    namesearch: 'Si tu choisis « Non autorisée », personne ne pourra te trouver en cherchant ton nom. On pourra encore te trouver avec tes compétences ou ton produit.',
     phone: 'Privé : ton numéro n’est montré qu’aux membres que tu acceptes. Public : tous les membres connectés peuvent le voir. Tu peux le changer à tout moment.'
   };
   const infoPop = document.createElement('div'); infoPop.id = 'info-pop'; infoPop.hidden = true; document.body.appendChild(infoPop);
@@ -965,8 +994,41 @@ html.kb,html.kb body{overflow:hidden}
   $('#rq-list').addEventListener('click', async e => { const b = e.target.closest('[data-ans]'); if (!b) return; b.disabled = true; try { await api('/api/requests', { method: 'POST', body: JSON.stringify({ id: b.dataset.id, status: b.dataset.ans }) }); loadReq(); } catch (er) { toast('Action impossible'); b.disabled = false; } });
   $('#rq-back').addEventListener('click', () => go('chat'));
 
+  /* ---------- boutique : prix, vendeur, localisation, panier ---------- */
+  const fcfa = n => Number(n).toLocaleString('fr-FR') + ' FCFA';
+  const cartBtn = p => `<button type="button" class="btn" data-cart="${esc(p.id)}" data-t="${esc(p.title)}" data-p="${p.price == null ? '' : esc(p.price)}" data-a="${esc(p.author)}" data-u="${esc(p.user_id || '')}">Ajouter au panier</button>`;
+  const shopHtml = p => {
+    let s = '';
+    if (p.price != null && p.price !== '') s += `<p><strong>${esc(fcfa(p.price))}</strong></p>`;
+    if ('me' in p && !p.me) s += p.phone ? `<div class="pact"><a class="call" href="${telHref(p.phone)}">${esc(p.phone)}</a><a class="wa" href="${waHref(p.phone)}" target="_blank" rel="noopener">WhatsApp</a></div>` : (p.req === 'pending' ? '<small>Demande de contact envoyée au vendeur.</small>' : (p.req === 'declined' ? '<small>Demande refusée par le vendeur.</small>' : `<button type="button" class="btn" data-ask="${esc(p.user_id)}">Demander le numéro du vendeur</button>`));
+    if (p.lat != null && p.lng != null) s += `<small><a href="https://www.google.com/maps?q=${esc(p.lat)},${esc(p.lng)}" target="_blank" rel="noopener">📍 Voir la localisation sur Google Maps</a></small>`;
+    if (p.finished) s += `<small>Terminé : ${esc(p.upd || 'le vendeur l’a indiqué')}.</small>`;
+    else if (!p.mine && !p.me) s += `<div style="margin-top:8px">${cartBtn(p)}</div>`;
+    return s;
+  };
+  const cartKey = () => convKey().replace('convs', 'cart');
+  const loadCart = () => { try { return JSON.parse(localStorage.getItem(cartKey()) || '[]'); } catch (e) { return []; } };
+  const saveCart = a => { try { localStorage.setItem(cartKey(), JSON.stringify(a)); } catch (e) {} };
+  function renderCart() {
+    const a = loadCart(), total = a.reduce((s, x) => s + (Number(x.p) || 0) * x.n, 0);
+    $('#cart-count').textContent = a.length ? '(' + a.reduce((s, x) => s + x.n, 0) + ')' : '';
+    $('#cart-list').innerHTML = a.length ? a.map((x, i) => `<div class="bl-card"><h3>${esc(x.t)}</h3><p>${x.p ? esc(fcfa(x.p)) : 'Prix à discuter avec le vendeur'}</p><small>Vendeur : ${esc(x.a)}</small><div class="bl-act"><button type="button" class="btn" data-cm="${i}" aria-label="Moins">−</button><span style="align-self:center">${x.n}</span><button type="button" class="btn" data-cp="${i}" aria-label="Plus">+</button><button type="button" class="btn" data-cx="${i}">Retirer</button><button type="button" class="btn" data-cs="${esc(x.a)}">Contacter</button></div></div>`).join('') + `<p><strong>Total : ${esc(fcfa(total))}</strong></p><p class="muted" style="font-size:13px">Le panier garde tes articles. Le paiement se règle directement avec chaque vendeur.</p>` : '<p class="muted">Ton panier est vide.</p>';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-cart]');
+    if (b) { const a = loadCart(), x = a.find(i => i.id === b.dataset.cart); if (x) x.n++; else a.push({ id: b.dataset.cart, t: b.dataset.t, p: b.dataset.p, a: b.dataset.a, u: b.dataset.u, n: 1 }); saveCart(a); renderCart(); toast('Ajouté au panier'); return; }
+    const c = e.target.closest('#cart-list [data-cm],#cart-list [data-cp],#cart-list [data-cx],#cart-list [data-cs]'); if (!c) return;
+    const a = loadCart();
+    if (c.dataset.cs !== undefined) { q.value = c.dataset.cs; grow(); go('chat'); $('#ask').requestSubmit(); return; }
+    const i = +(c.dataset.cm ?? c.dataset.cp ?? c.dataset.cx);
+    if (c.dataset.cp !== undefined) a[i].n++; else if (c.dataset.cm !== undefined) a[i].n = Math.max(1, a[i].n - 1); else a.splice(i, 1);
+    saveCart(a); renderCart();
+  });
+  $('#cart-back').addEventListener('click', () => go('chat'));
+  renderCart();
+
   /* ---------- blogs ---------- */
-  let blPre = '', blTab = 'mine', blImgs = [], blEdit = null, blData = [];
+  let blLoc = null, blPre = '', blTab = 'mine', blImgs = [], blEdit = null, blData = [];
   const blOv = $('#bl-ov');
   function srcHtml(s) {
     s = s || [];
@@ -989,16 +1051,16 @@ html.kb,html.kb body{overflow:hidden}
       box.innerHTML = items.length ? `<div class="bl-grid">${items.map(i => `<figure><img src="${esc(i.src)}" alt="${esc(i.p.title)}" data-src="${esc(i.src)}"><figcaption>Source : ${esc(i.p.author)} — ${esc(i.p.title)}</figcaption></figure>`).join('')}</div>` : '<p class="muted">Aucune image trouvée.</p>';
       return;
     }
-    box.innerHTML = blData.map((p, i) => `<article class="bl-card"><span class="tag">${esc(p.kind)}</span>${p.is_public === false ? ' <span class="tag">Privé</span>' : ''}<h3>${esc(p.title)}</h3><p>${esc(p.body)}</p>${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}<small>Source : blog de ${esc(p.author)} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</small>${p.mine ? `<div class="bl-act"><button type="button" class="btn" data-act="edit" data-i="${i}">Modifier</button><button type="button" class="btn" data-act="del" data-i="${i}">Supprimer</button></div>` : ''}</article>`).join('');
+    box.innerHTML = blData.map((p, i) => `<article class="bl-card"><span class="tag">${esc(p.kind)}</span>${p.is_public === false ? ' <span class="tag">Privé</span>' : ''}<h3>${esc(p.title)}</h3><p>${esc(p.body)}</p>${(p.images || []).length ? `<div class="bl-imgs">${p.images.map(s => `<img src="${esc(s)}" alt="" data-src="${esc(s)}">`).join('')}</div>` : ''}${p.kind === 'produit' ? shopHtml(p) : ''}<small>Source : blog de ${esc(p.author)} · ${new Date(p.created_at).toLocaleDateString('fr-FR')}</small>${p.mine ? `<div class="bl-act"><button type="button" class="btn" data-act="edit" data-i="${i}">Modifier</button><button type="button" class="btn" data-act="del" data-i="${i}">Supprimer</button></div>` : ''}</article>`).join('');
   }
   async function loadBlog() {
     $('#bl-list').innerHTML = '<p class="muted">Chargement…</p>';
-    try { const d = await api('/api/posts?q=' + encodeURIComponent($('#bl-q').value.trim()) + (blTab === 'mine' ? '&mine=1' : '')); blData = (d.posts || []).filter(p => blTab === 'exam' ? p.kind === 'épreuve' : p.kind !== 'épreuve'); blRender(); }
+    try { const d = await api('/api/posts?q=' + encodeURIComponent($('#bl-q').value.trim()) + (blTab === 'mine' ? '&mine=1' : '')); blData = (d.posts || []).filter(p => blTab === 'exam' ? p.kind === 'épreuve' : (blTab === 'posts' ? p.kind === 'produit' : p.kind !== 'épreuve')); blRender(); }
     catch (e) { $('#bl-list').innerHTML = '<p class="err">Impossible de charger les blogs.</p>'; }
   }
   function initBlog() { $('#bl-q').value = blPre; blPre = ''; document.querySelectorAll('#bl-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === blTab)); loadBlog(); }
   function blPrev() { $('#bl-prev').innerHTML = blImgs.map((s, i) => `<img src="${esc(s)}" data-i="${i}" alt="Photo ${i + 1}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;margin:0 6px 6px 0">`).join('') + (blImgs.length ? '<p class="muted" style="font-size:12px;margin:0">Touche une photo pour la retirer.</p>' : ''); }
-  function blOpen(p) { blEdit = p || null; blImgs = p ? (p.images || []).slice() : []; $('#bl-st').textContent = p ? 'Modifier l’article' : 'Nouvel article'; $('#bl-kind').value = p ? p.kind : 'produit'; $('#bl-vis').value = p && p.is_public === false ? '0' : '1'; $('#bl-title').value = p ? p.title : ''; $('#bl-body').value = p ? p.body : ''; $('#bl-err').textContent = ''; blPrev(); blOv.hidden = false; }
+  function blOpen(p) { blEdit = p || null; blImgs = p ? (p.images || []).slice() : []; $('#bl-st').textContent = p ? 'Modifier l’article' : 'Nouvel article'; $('#bl-kind').value = p ? p.kind : 'produit'; $('#bl-vis').value = p && p.is_public === false ? '0' : '1'; $('#bl-title').value = p ? p.title : ''; $('#bl-body').value = p ? p.body : ''; $('#bl-err').textContent = ''; $('#bl-price').value = p && p.price != null ? p.price : ''; blLoc = p && p.lat != null ? { lat: p.lat, lng: p.lng } : null; blLocSt(); blShop(); blPrev(); blOv.hidden = false; }
   $('#bl-tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.t === 'chat') { go('chat'); return; } blTab = b.dataset.t; initBlog(); });
   $('#bl-list').addEventListener('click', async e => {
     const im = e.target.closest('img[data-src]');
@@ -1009,11 +1071,20 @@ html.kb,html.kb body{overflow:hidden}
   });
   $('#bl-prev').addEventListener('click', e => { const i = e.target.dataset.i; if (i === undefined) return; blImgs.splice(+i, 1); blPrev(); });
   $('#bl-img').addEventListener('change', async e => { for (const f of [...e.target.files].slice(0, 6)) { const d = await shrink(f); if (d) blImgs.push(d); } e.target.value = ''; blPrev(); });
+  function blShop() { $('#bl-shop').hidden = $('#bl-kind').value !== 'produit'; }
+  function blLocSt() { $('#bl-loc').textContent = blLoc ? 'Retirer ma position' : 'Ajouter ma position (facultatif)'; $('#bl-loc-st').textContent = blLoc ? 'Position ajoutée ✓' : ''; }
+  $('#bl-kind').addEventListener('change', blShop);
+  $('#bl-loc').addEventListener('click', () => {
+    if (blLoc) { blLoc = null; blLocSt(); return; }
+    if (!navigator.geolocation) { toast('Position indisponible sur cet appareil'); return; }
+    $('#bl-loc-st').textContent = 'Recherche…';
+    navigator.geolocation.getCurrentPosition(pos => { blLoc = { lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5) }; blLocSt(); }, () => { blLocSt(); toast('Position refusée ou indisponible'); }, { enableHighAccuracy: true, timeout: 15000 });
+  });
   $('#bl-new').addEventListener('click', () => blOpen(null));
   $('#bl-x').addEventListener('click', () => blOv.hidden = true);
   $('#bl-f').addEventListener('submit', async e => {
     e.preventDefault(); const b = e.target.querySelector('button[type=submit]'); b.disabled = true; $('#bl-err').textContent = '';
-    try { await api('/api/posts', { method: 'POST', body: JSON.stringify({ id: blEdit ? blEdit.id : undefined, kind: $('#bl-kind').value, is_public: $('#bl-vis').value === '1', title: $('#bl-title').value.trim(), body: $('#bl-body').value.trim(), images: blImgs }) }); blOv.hidden = true; toast('Article publié'); blTab = $('#bl-kind').value === 'épreuve' ? 'exam' : 'mine'; initBlog(); }
+    try { await api('/api/posts', { method: 'POST', body: JSON.stringify({ id: blEdit ? blEdit.id : undefined, kind: $('#bl-kind').value, is_public: $('#bl-vis').value === '1', price: $('#bl-kind').value === 'produit' && $('#bl-price').value !== '' ? Number($('#bl-price').value) : null, lat: $('#bl-kind').value === 'produit' && blLoc ? blLoc.lat : null, lng: $('#bl-kind').value === 'produit' && blLoc ? blLoc.lng : null, title: $('#bl-title').value.trim(), body: $('#bl-body').value.trim(), images: blImgs }) }); blOv.hidden = true; toast('Article publié'); blTab = $('#bl-kind').value === 'épreuve' ? 'exam' : 'mine'; initBlog(); }
     catch (er) { $('#bl-err').textContent = 'Publication impossible. Réessaie.'; }
     b.disabled = false;
   });
