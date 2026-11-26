@@ -698,6 +698,17 @@ html.kb,html.kb body{overflow:hidden}
       var vd = await vr.json().catch(function () { return {}; });
       return res(vd, vr.status);
     }
+    if (path === '/api/seller-contact' && m === 'POST') {
+      var sid = encodeURIComponent(body.user_id), meS = sess().user.id;
+      var cs2 = await db('contacts?user_id=eq.' + sid + '&select=phone');
+      if (cs2 && cs2[0] && cs2[0].phone) return res({ phone: cs2[0].phone });
+      var dup2 = await db('contact_requests?from_user=eq.' + meS + '&to_user=eq.' + sid + '&select=id');
+      if (!dup2 || !dup2[0]) {
+        var nm2 = await db('students?user_id=eq.' + meS + '&select=full_name');
+        await db('contact_requests', { method: 'POST', body: JSON.stringify({ to_user: body.user_id, from_name: (nm2 && nm2[0] && nm2[0].full_name) || String(sess().user.email || 'Membre').split('@')[0] }) });
+      }
+      return res({ phone: '', requested: true });
+    }
     if (path === '/api/contact-request' && m === 'POST') {
       var meU = sess().user.id, dup = await db('contact_requests?from_user=eq.' + meU + '&to_user=eq.' + encodeURIComponent(body.to_user) + '&select=id');
       if (dup && dup[0]) return res({ ok: true });
@@ -1012,14 +1023,22 @@ html.kb,html.kb body{overflow:hidden}
   function renderCart() {
     const a = loadCart(), total = a.reduce((s, x) => s + (Number(x.p) || 0) * x.n, 0);
     $('#cart-count').textContent = a.length ? '(' + a.reduce((s, x) => s + x.n, 0) + ')' : '';
-    $('#cart-list').innerHTML = a.length ? a.map((x, i) => `<div class="bl-card"><h3>${esc(x.t)}</h3><p>${x.p ? esc(fcfa(x.p)) : 'Prix à discuter avec le vendeur'}</p><small>Vendeur : ${esc(x.a)}</small><div class="bl-act"><button type="button" class="btn" data-cm="${i}" aria-label="Moins">−</button><span style="align-self:center">${x.n}</span><button type="button" class="btn" data-cp="${i}" aria-label="Plus">+</button><button type="button" class="btn" data-cx="${i}">Retirer</button><button type="button" class="btn" data-cs="${esc(x.a)}">Contacter</button></div></div>`).join('') + `<p><strong>Total : ${esc(fcfa(total))}</strong></p><p class="muted" style="font-size:13px">Le panier garde tes articles. Le paiement se règle directement avec chaque vendeur.</p>` : '<p class="muted">Ton panier est vide.</p>';
+    $('#cart-list').innerHTML = a.length ? a.map((x, i) => `<div class="bl-card"><h3>${esc(x.t)}</h3><p>${x.p ? esc(fcfa(x.p)) : 'Prix à discuter avec le vendeur'}</p><small>Vendeur : ${esc(x.a)}</small><div class="bl-act"><button type="button" class="btn" data-cm="${i}" aria-label="Moins">−</button><span style="align-self:center">${x.n}</span><button type="button" class="btn" data-cp="${i}" aria-label="Plus">+</button><button type="button" class="btn" data-cx="${i}">Retirer</button><button type="button" class="btn" data-cs="${i}">Contacter</button></div></div>`).join('') + `<p><strong>Total : ${esc(fcfa(total))}</strong></p><p class="muted" style="font-size:13px">Le panier garde tes articles. Le paiement se règle directement avec chaque vendeur.</p>` : '<p class="muted">Ton panier est vide.</p>';
   }
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-cart]');
     if (b) { const a = loadCart(), x = a.find(i => i.id === b.dataset.cart); if (x) x.n++; else a.push({ id: b.dataset.cart, t: b.dataset.t, p: b.dataset.p, a: b.dataset.a, u: b.dataset.u, n: 1 }); saveCart(a); renderCart(); toast('Ajouté au panier'); return; }
     const c = e.target.closest('#cart-list [data-cm],#cart-list [data-cp],#cart-list [data-cx],#cart-list [data-cs]'); if (!c) return;
     const a = loadCart();
-    if (c.dataset.cs !== undefined) { q.value = c.dataset.cs; grow(); go('chat'); $('#ask').requestSubmit(); return; }
+    if (c.dataset.cs !== undefined) {
+      const x = a[+c.dataset.cs]; if (!x || !x.u) { toast('Vendeur introuvable'); return; }
+      c.disabled = true;
+      api('/api/seller-contact', { method: 'POST', body: JSON.stringify({ user_id: x.u }) }).then(d => {
+        if (d.phone) { const u = waHref(d.phone) + '?text=' + encodeURIComponent('Bonjour, je suis intéressé(e) par « ' + x.t + ' » sur NeXt.'); if (!window.open(u, '_blank')) location.href = u; }
+        else toast('Numéro privé : ta demande est envoyée. Tu pourras écrire au vendeur dès qu’il accepte.');
+      }).catch(() => toast('Contact impossible pour le moment')).finally(() => { c.disabled = false; });
+      return;
+    }
     const i = +(c.dataset.cm ?? c.dataset.cp ?? c.dataset.cx);
     if (c.dataset.cp !== undefined) a[i].n++; else if (c.dataset.cm !== undefined) a[i].n = Math.max(1, a[i].n - 1); else a.splice(i, 1);
     saveCart(a); renderCart();
